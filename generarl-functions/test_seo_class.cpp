@@ -104,7 +104,7 @@ TEST_F(SEOTest, SetPcalc) {
     auto oscillator = (*seoGrid).at(0).at(0).at(0);
 
     // 初期パラメータ設定
-    oscillator->setQn(2);   // 電荷量
+    oscillator->setQ(2);   // 電荷量
 
     // 接続のノード電圧を設定
     (*seoGrid).at(1).at(0).at(0)->setVn(1);
@@ -132,29 +132,106 @@ TEST_F(SEOTest, SetPcalc) {
     EXPECT_DOUBLE_EQ(oscillator->getVn(), calcVn);
 }
 
+// テストケース: エネルギー変化計算の動作確認
+TEST_F(SEOTest, SetdEcalc) {
+    // 振動子を選択(r=1,rj=0.001,cj=18,c=2,vd=0.007,legs=3)
+    auto oscillator = (*seoGrid).at(0).at(0).at(0);
+
+    // 初期パラメータ設定
+    oscillator->setQ(2);   // 電荷量
+
+    // 接続のノード電圧を設定
+    (*seoGrid).at(1).at(0).at(0)->setVn(1);
+    (*seoGrid).at(0).at(1).at(0)->setVn(2);
+    (*seoGrid).at(0).at(0).at(1)->setVn(3);
+    // 周囲の電圧を設定
+    (*seoGrid).at(0).at(0).at(0)->setSurroundingVoltages();
+
+    // パラメータ計算
+    oscillator->setdEcalc();
+
+    // エネルギー変化計算:
+    // dE["up"] = -e * (e - 2 * (Q + C * V_sum)) / (2 * (legs * C + Cj));
+    // dE["down"] = -e * (e + 2 * (Q + C * V_sum)) / (2 * (legs * C + Cj));
+    double expected_dE_up = -e * (e - 2 * (2.0 + 2.0 * 6.0)) / (2 * (3 * 2.0 + 18.0));
+    double expected_dE_down = -e * (e + 2 * (2.0 + 2.0 * 6.0)) / (2 * (3 * 2.0 + 18.0));
+    EXPECT_DOUBLE_EQ(oscillator->getdE()["up"], expected_dE_up);
+    EXPECT_DOUBLE_EQ(oscillator->getdE()["down"], expected_dE_down);
+}
+
+// テストケース: 電荷チャージの動作確認
+TEST_F(SEOTest, SetNodeCharge) {
+    // 振動子を選択(r=1,rj=0.001,cj=18,c=2,vd=0.007,legs=3)
+    auto oscillator = (*seoGrid).at(0).at(0).at(0);
+
+    // 初期パラメータ設定
+    oscillator->setQ(0);   // 初期電荷
+    oscillator->setVn(3.0); // ノード電圧
+    double dt = 0.1;        // 時間ステップ
+
+    // 電荷を更新: Q += (Vd - Vn) * dt / R;
+
+    oscillator->setNodeCharge(dt);
+
+    // 期待値を計算
+    double expectedQ = 0.0 + (0.007 - 3.0) * dt / 1.0;
+
+    // 更新後のQを確認
+    EXPECT_DOUBLE_EQ(oscillator->getQ(), expectedQ);
+
+    // さらに更新して確認
+    oscillator->setNodeCharge(dt);
+    expectedQ += (0.007 - 3.0) * dt / 1.0; // 2回目の更新
+    EXPECT_DOUBLE_EQ(oscillator->getQ(), expectedQ);
+}
+
 // テストケース: calculateTunnelWt の動作確認
 TEST_F(SEOTest, CalculateTunnelWt)
 {
-    // 振動子のセットアップ
-    SEO seo(1, 0.001, 18, 2, 0.007, 1);
+    // 振動子を選択(r=1,rj=0.001,cj=18,c=2,vd=0.007,legs=3)
+    auto oscillator = (*seoGrid).at(0).at(0).at(0);
 
     // エネルギー変化量をセット
-    seo.setdE("up", 1);    // 上方向のエネルギー変化量
-    seo.setdE("down", -1); // 下方向のエネルギー変化量
+    oscillator->setdE("up", 1);    // 上方向のエネルギー変化量
+    oscillator->setdE("down", -1); // 下方向のエネルギー変化量
 
     // トンネル待ち時間を計算
-    seo.calculateTunnelWt();
+    oscillator->calculateTunnelWt();
     // 結果を検証
-    EXPECT_NE(seo.getWT("up"), 0);
-    EXPECT_EQ(seo.getWT("down"), 0);
+    EXPECT_NE(oscillator->getWT("up"), 0);
+    EXPECT_EQ(oscillator->getWT("down"), 0);
 
     // エネルギー変化量をセット
-    seo.setdE("up", -1);  // 上方向のエネルギー変化量
-    seo.setdE("down", 1); // 下方向のエネルギー変化量
+    oscillator->setdE("up", -1);  // 上方向のエネルギー変化量
+    oscillator->setdE("down", 1); // 下方向のエネルギー変化量
 
     // トンネル待ち時間を計算
-    seo.calculateTunnelWt();
+    oscillator->calculateTunnelWt();
     // 結果を検証
-    EXPECT_EQ(seo.getWT("up"), 0);
-    EXPECT_NE(seo.getWT("down"), 0);
+    EXPECT_EQ(oscillator->getWT("up"), 0);
+    EXPECT_NE(oscillator->getWT("down"), 0);
+}
+
+// テストケース: トンネル発生の動作確認
+TEST_F(SEOTest, SetTunnel) 
+{
+    // 振動子を選択
+    auto oscillator = (*seoGrid).at(0).at(0).at(0);
+
+    // 初期電荷を設定
+    oscillator->setQ(1.0);    // 初期電荷量
+
+    // トンネル方向が "up" の場合
+    oscillator->setTunnel("up");
+    double expectedQ_up = 1.0 - e; // 電荷が -e 減少
+    EXPECT_DOUBLE_EQ(oscillator->getQ(), expectedQ_up);
+
+    // トンネル方向が "down" の場合
+    oscillator->setTunnel("down");
+    double expectedQ_down = expectedQ_up + e; // 電荷が +e 増加
+    EXPECT_DOUBLE_EQ(oscillator->getQ(), expectedQ_down);
+
+    // 無効なトンネル方向（例: 空文字列）では例外処理が発生することを確認
+    EXPECT_THROW(oscillator->setTunnel(""), invalid_argument);
+    
 }

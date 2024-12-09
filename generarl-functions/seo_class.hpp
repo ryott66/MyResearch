@@ -28,7 +28,6 @@ private:
     vector<double> V;       // 周囲のノード電圧
     map<string, double> dE; // エネルギー変化量(up, down)
     map<string, double> wt; // トンネル待時間(up, down)
-    string tunnel;          // トンネルの有無("", up, down)
     vector<shared_ptr<SEO>> connection; // 接続されている素子のポインタ
 
 public:
@@ -51,6 +50,18 @@ public:
     // 振動子のパラメータ計算
     void setPcalc();
 
+    // 振動子のエネルギー計算
+    void setdEcalc();
+
+    // 電荷の更新
+    void setNodeCharge(const double dt);
+
+    // トンネル待ち時間計算
+    void calculateTunnelWt();
+
+    // 振動子のトンネル
+    void setTunnel(const string direction);
+
     //-----------ゲッター------------//    
     // ノード電圧を取得
     double getVn() const;
@@ -61,17 +72,11 @@ public:
     // 接続されてる振動子の電圧を取得
     vector<double> getSurroundingVoltages() const;
 
-    // 電荷の更新
-    void updateCharge(double dt);
+    // dEの取得
+    map<string, double> getdE() const;
 
-    // ノード電圧の計算
-    void calculateNodeVoltage();
-
-    // エネルギー変化量の計算
-    double calculateEnergyChange(bool isUp) const;
-
-    // トンネル待ち時間計算
-    void calculateTunnelWt();
+    // Qの取得
+    double getQ() const;
 
     //-------- 汎用処理 -------------//
     // 0から1の間の乱数を生成
@@ -106,7 +111,7 @@ public:
     void setVn(double vn);
 
     // テスト用Qnセッター
-    void setQn(double qn);
+    void setQ(double qn);
 
     // テスト用wtゲッター
     double getWT(const string& direction) const;
