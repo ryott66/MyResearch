@@ -13,7 +13,7 @@ private:
     double dt;                                   // 刻み時間[ns]
     double endtime;                              // シミュレーションの終了時間[ns]
     map<vector<shared_ptr<SEO>>, string> tunnel; // トンネルを発生させる素子とトンネル方向
-    vector<FILE *> fp;                           // 出力ファイルポインタ
+    vector<FILE *> fp;                           // 出力ファイルポインタのベクトル
 
 public:
 //     Simulation(double vds, double rj, double r, double cj, double c)
@@ -37,7 +37,8 @@ public:
 //         return static_cast<double>(rand()) / RAND_MAX;
 //     }
 
-//     void run()
+    // シミュレーションの全体の実行
+    void run(double dt, double endtime);
 //     {
 //         srand(static_cast<unsigned>(time(nullptr)));
 //         while (t <= T_END)
