@@ -18,14 +18,20 @@ public:
     // コンストラクタ（指定する型、サイズで動的配列を確保）
     Grid(const vector<int>& dims);
 
-    // 指定位置のSEOオブジェクトを取得
+    // indicesで指定した場所のオブジェクトを取得
     shared_ptr<Element> getElement(const vector<int>& indices) const;
 
-    // 指定位置のSEOオブジェクトを設定
+    // indicesで指定した場所のオブジェクトを更新
     void setElement(const vector<int>& indices, const shared_ptr<Element>& element);
 
-    // // グリッド全体のSEOオブジェクトを更新
-    // void updateGrid(double dt);
+    // Gridインスタンス全体のVnを計算して更新
+    void updateGridVn();
+
+    // Gridインスタンス全体のdEを計算して更新
+    void updateGriddE();
+
+    // Gridインスタンス全体のノード電荷を計算して更新
+    void updateGridQn(const double dt);
 
     // フラット化されたデータの取得
     vector<shared_ptr<Element>>& getFlatGrid() const;
@@ -33,7 +39,9 @@ public:
     // グリッドサイズを取得
     vector<int> getDimensions() const;
 };
+
 //-------------private----------------//
+
 // 多次元インデックスを1次元インデックスに変換
 template <typename Element>
 int Grid<Element>::toFlatIndex(const vector<int>& indices) const {
@@ -73,21 +81,48 @@ Grid<Element>::Grid(const vector<int>& dims) : dimensions(dims) {
     }
 }
 
+// indicesで指定した場所の要素を取得
 template <typename Element>
 shared_ptr<Element> Grid<Element>::getElement(const vector<int>& indices) const {
     return grid[toFlatIndex(indices)];
 }
 
+// indicesで指定した場所の要素を更新
 template <typename Element>
 void Grid<Element>::setElement(const vector<int>& indices, const shared_ptr<Element>& element) {
     grid[toFlatIndex(indices)] = element;
 }
 
-// void Grid::updateGrid(double dt) {
-//     for (auto& seo : grid) {
-//         seo->setNodeCharge(dt);
-//     }
-// }
+// Gridインスタンス全体のVnを計算して更新
+template <typename Element>
+void Grid<Element>::updateGridVn() {
+    // 周囲の電圧を自動的に設定
+    for (auto& element : grid) {
+        element->setSurroundingVoltages();
+    }
+    // ノード電圧の計算
+    for (auto& element : grid) {
+        element->setPcalc();
+    }
+}
+
+// Gridインスタンス全体のdEを計算して更新
+template <typename Element>
+void Grid<Element>::updateGriddE() {
+    // エネルギー変化dEを計算
+    for (auto& element : grid) {
+        element->setdEcalc();
+    }
+}
+
+// Gridインスタンス全体のノード電荷を計算して更新
+template <typename Element>
+void Grid<Element>::updateGridQn(const double dt) {
+    // ノード電荷Qを計算
+    for (auto& element : grid) {
+        element->setNodeCharge(dt);
+    }
+}
 
 // フラット化されたデータの取得
 template <typename Element>
