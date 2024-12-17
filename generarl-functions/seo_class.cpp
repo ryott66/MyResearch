@@ -1,7 +1,7 @@
 #include "seo_class.hpp"
 //------ コンストラクタ（パラメータの初期設定）---------//
 // 初期値無し
-SEO::SEO() : R(0), Rj(0), Cj(0), C(0), Vd(0), Q(0), Vn(0), legs(0)
+SEO::SEO() : R(0), Rj(0), Cj(0), C(0), Vd(0), Q(0), Vn(0), legs(0), V_sum(0)
 {
     dE["up"] = 0.0;
     dE["down"] = 0.0;
@@ -12,7 +12,7 @@ SEO::SEO() : R(0), Rj(0), Cj(0), C(0), Vd(0), Q(0), Vn(0), legs(0)
 // 初期値あり
 SEO::SEO(double r, double rj, double cj, double c, double vd, int legscounts)
     : R(r), Rj(rj), Cj(cj), C(c), Vd(vd), Q(0.0), Vn(0.0), legs(legscounts),
-      V(legscounts, 0.0), connection(0)
+      V_sum(0.0), connection(0)
 {
     dE["up"] = 0.0;
     dE["down"] = 0.0;
@@ -49,14 +49,10 @@ void SEO::setConnections(const vector<shared_ptr<SEO>> &connectedSEOs)
 // 周囲の電圧を設定
 void SEO::setSurroundingVoltages()
 {
-    V.clear();
-    for (auto x : connection)
+    V_sum = 0;
+    for (auto seo : connection)
     {
-        V.push_back(x->Vn);
-    }
-    if (V.size() != connection.size())
-    {
-        throw invalid_argument("The number of legs does not match the V size.");
+        V_sum += seo->Vn;
     }
 }
 
@@ -64,7 +60,7 @@ void SEO::setSurroundingVoltages()
 void SEO::setPcalc()
 {
     // V1,V2,・・・の合計値を計算
-    double V_sum = reduce(V.begin(), V.end());
+    // double V_sum = reduce(V.begin(), V.end());
     Vn = Q / Cj + (C / (Cj * (legs * C + Cj))) * (Cj * V_sum - legs * Q);
 }
 
@@ -72,7 +68,7 @@ void SEO::setPcalc()
 void SEO::setdEcalc()
 {
     // V1,V2,・・・の合計値を計算
-    double V_sum = reduce(V.begin(), V.end());
+    // double V_sum = reduce(V.begin(), V.end());
     dE["up"] = -e * (e - 2 * (Q + C * V_sum)) / (2 * (legs * C + Cj));
     dE["down"] = -e * (e + 2 * (Q + C * V_sum)) / (2 * (legs * C + Cj));
 }
@@ -134,10 +130,10 @@ vector<shared_ptr<SEO>> SEO::getConnection() const
     return connection;
 }
 
-// 接続されてる振動子の電圧を取得
-vector<double> SEO::getSurroundingVoltages() const
+// 接続されてる振動子の電圧の総和を取得
+double SEO::getSurroundingVsum() const
 {
-    return V;
+    return V_sum;
 }
 
 // dEの取得
