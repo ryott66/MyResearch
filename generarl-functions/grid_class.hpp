@@ -18,14 +18,11 @@ public:
     // コンストラクタ（指定する型、サイズで動的配列を確保）
     Grid(const vector<int>& dims);
 
-    // // 指定位置のSEOオブジェクトを取得
-    // shared_ptr<SEO> getSEO(const vector<int>& indices) const;
+    // 指定位置のSEOオブジェクトを取得
+    shared_ptr<Element> getElement(const vector<int>& indices) const;
 
-    // // 指定位置のSEOオブジェクトを設定
-    // void setSEO(const vector<int>& indices, const shared_ptr<SEO>& seo);
-
-    // // 周囲の接続を設定
-    // void configureConnections();
+    // 指定位置のSEOオブジェクトを設定
+    void setElement(const vector<int>& indices, const shared_ptr<Element>& element);
 
     // // グリッド全体のSEOオブジェクトを更新
     // void updateGrid(double dt);
@@ -76,40 +73,15 @@ Grid<Element>::Grid(const vector<int>& dims) : dimensions(dims) {
     }
 }
 
+template <typename Element>
+shared_ptr<Element> Grid<Element>::getElement(const vector<int>& indices) const {
+    return grid[toFlatIndex(indices)];
+}
 
-
-
-// shared_ptr<SEO> Grid::getSEO(const vector<int>& indices) const {
-//     return grid[toFlatIndex(indices)];
-// }
-
-// void Grid::setSEO(const vector<int>& indices, const shared_ptr<SEO>& seo) {
-//     grid[toFlatIndex(indices)] = seo;
-// }
-
-// void Grid::configureConnections() {
-//     int totalSize = grid.size();
-//     for (int i = 0; i < totalSize; ++i) {
-//         vector<int> indices(dimensions.size());
-//         int temp = i;
-//         for (int j = dimensions.size() - 1; j >= 0; --j) {
-//             indices[j] = temp % dimensions[j];
-//             temp /= dimensions[j];
-//         }
-
-//         vector<shared_ptr<SEO>> connections;
-//         for (int d = 0; d < dimensions.size(); ++d) {
-//             for (int offset : {-1, 1}) {
-//                 vector<int> neighbor = indices;
-//                 neighbor[d] += offset;
-//                 if (neighbor[d] >= 0 && neighbor[d] < dimensions[d]) {
-//                     connections.push_back(getSEO(neighbor));
-//                 }
-//             }
-//         }
-//         getSEO(indices)->setConnections(connections);
-//     }
-// }
+template <typename Element>
+void Grid<Element>::setElement(const vector<int>& indices, const shared_ptr<Element>& element) {
+    grid[toFlatIndex(indices)] = element;
+}
 
 // void Grid::updateGrid(double dt) {
 //     for (auto& seo : grid) {
@@ -119,7 +91,7 @@ Grid<Element>::Grid(const vector<int>& dims) : dimensions(dims) {
 
 // フラット化されたデータの取得
 template <typename Element>
-vector<shared_ptr<Element>>& Grid<Element>::getFlatGrid() const {
+vector<shared_ptr<Element>>& Grid<Element>::getFlatGrid() const { 
     return grid;
 }
 
