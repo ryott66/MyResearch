@@ -25,7 +25,8 @@ private:
     double Cj;              // 接合容量
     double C;               // 接続容量
     int legs;               // 足の数
-    vector<double> V;       // 周囲のノード電圧
+    // vector<double> V;    // 周囲のノード電圧
+    double V_sum;           // 周囲のノード電圧の総和
     map<string, double> dE; // エネルギー変化量(up, down)
     map<string, double> wt; // トンネル待時間(up, down)
     vector<shared_ptr<SEO>> connection; // 接続されている素子のポインタ
@@ -69,8 +70,8 @@ public:
     // 接続されてる振動子を取得
     vector<shared_ptr<SEO>> getConnection() const;
 
-    // 接続されてる振動子の電圧を取得
-    vector<double> getSurroundingVoltages() const;
+    // 接続されてる振動子の電圧の総和を取得
+    double getSurroundingVsum() const;
 
     // dEの取得
     map<string, double> getdE() const;

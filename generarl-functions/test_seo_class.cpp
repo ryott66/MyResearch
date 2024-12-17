@@ -91,11 +91,12 @@ TEST_F(SEOTest, SetSurroundingVoltages) {
     (*seoGrid).at(0).at(0).at(0)->setSurroundingVoltages();
 
     // Vが正しく更新されているか確認
-    const auto& surroundingVoltages = (*seoGrid).at(0).at(0).at(0)->getSurroundingVoltages();
-    EXPECT_EQ(surroundingVoltages.size(), 3); // 接続数が一致しているか
-    EXPECT_DOUBLE_EQ(surroundingVoltages.at(0), 1); // [1][0][0] のノード電圧
-    EXPECT_DOUBLE_EQ(surroundingVoltages.at(1), 2); // [0][1][0] のノード電圧
-    EXPECT_DOUBLE_EQ(surroundingVoltages.at(2), 3); // [0][0][1] のノード電圧
+    const auto& surroundingVoltage = (*seoGrid).at(0).at(0).at(0)->getSurroundingVsum();
+    // EXPECT_EQ(surroundingVoltages.size(), 3); // 接続数が一致しているか
+    // EXPECT_DOUBLE_EQ(surroundingVoltages.at(0), 1); // [1][0][0] のノード電圧
+    // EXPECT_DOUBLE_EQ(surroundingVoltages.at(1), 2); // [0][1][0] のノード電圧
+    // EXPECT_DOUBLE_EQ(surroundingVoltages.at(2), 3); // [0][0][1] のノード電圧
+    EXPECT_EQ(surroundingVoltage, 1+2+3);
 }
 
 // テストケース: パラメータ計算の動作確認
