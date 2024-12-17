@@ -1,5 +1,6 @@
 #include "seo_class.hpp"
 //------ コンストラクタ（パラメータの初期設定）---------//
+// 初期値無し
 SEO::SEO() : R(0), Rj(0), Cj(0), C(0), Vd(0), Q(0), Vn(0), legs(0)
 {
     dE["up"] = 0.0;
@@ -8,6 +9,7 @@ SEO::SEO() : R(0), Rj(0), Cj(0), C(0), Vd(0), Q(0), Vn(0), legs(0)
     wt["down"] = 0.0;
 }
 
+// 初期値あり
 SEO::SEO(double r, double rj, double cj, double c, double vd, int legscounts)
     : R(r), Rj(rj), Cj(cj), C(c), Vd(vd), Q(0.0), Vn(0.0), legs(legscounts),
       V(legscounts, 0.0), connection(0)
