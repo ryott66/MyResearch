@@ -39,6 +39,9 @@ public:
     SEO(double r, double rj, double cj, double c, double vd, int legscounts);
 
     //-----------セッター------------//
+    // パラメータセットアップ
+    void setUp(double r, double rj, double cj, double c, double vd, int legscounts);
+
     // バイアス電圧を設定
     void setVias(const double vd);
 

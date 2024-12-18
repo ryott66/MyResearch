@@ -13,7 +13,8 @@
 // };
 
 // Mock用のElementクラス
-class MockElement {
+class MockElement
+{
 private:
     int value;
 
@@ -26,16 +27,19 @@ public:
 };
 
 // テストフィクスチャ
-class GridTest : public ::testing::Test {
+class GridTest : public ::testing::Test
+{
 protected:
     vector<int> dimensions = {2, 3}; // 2x3のグリッドを作成
     Grid<MockElement> *grid;
 
-    void SetUp() override {
+    void SetUp() override
+    {
         grid = new Grid<MockElement>(dimensions);
     }
 
-    void TearDown() override {
+    void TearDown() override
+    {
         delete grid;
     }
 };
@@ -59,7 +63,8 @@ TEST_F(GridTest, Constructor)
 }
 
 // getElementのテスト
-TEST_F(GridTest, GetElementTest) {
+TEST_F(GridTest, GetElementTest)
+{
     vector<int> indices = {1, 2};
 
     // 初期化時にはデフォルトコンストラクタの値を返す
@@ -68,7 +73,8 @@ TEST_F(GridTest, GetElementTest) {
 }
 
 // setElementとgetElementの連携テスト
-TEST_F(GridTest, SetAndGetElementTest) {
+TEST_F(GridTest, SetAndGetElementTest)
+{
     vector<int> indices = {0, 1};
 
     auto newElement = make_shared<MockElement>(42); // 新しい要素をセット
@@ -79,9 +85,53 @@ TEST_F(GridTest, SetAndGetElementTest) {
 }
 
 // インデックス範囲外のテスト
-TEST_F(GridTest, OutOfRangeIndexTest) {
+TEST_F(GridTest, OutOfRangeIndexTest)
+{
     vector<int> invalidIndices = {2, 3}; // 範囲外のインデックス
 
     EXPECT_THROW(grid->getElement(invalidIndices), out_of_range);
     EXPECT_THROW(grid->setElement(invalidIndices, make_shared<MockElement>(10)), out_of_range);
 }
+
+// Vn
+TEST_F(GridTest, VnCalcTest)
+{
+    int sx, sy = 31;
+    vector<int> dimensions = {sx, sy}; // 31x31のグリッドを作成
+    Grid<SEO> seogrid(dimensions); // 指定したサイズのseo型の配列を用意
+    for (int y = 0; y < sy; y++)
+    {
+        for (int x = 0; x < sx; x++)
+        {
+            // 指定した位置のパラメータを設定
+            vector<int> indices = {x, y};
+            // 偶数
+            if ((x + y) % 2 == 0)
+            {
+                seogrid.getElement(indices)->setUp(1.0, 0.001, 12.0, 2.0, 0.004, 4);
+                seogrid.getElement(indices)->setVn(0.003);
+            }
+            // 奇数
+            else
+            {
+                seogrid.getElement(indices)->setUp(1.0, 0.001, 12.0, 2.0, -0.004, 4);
+                seogrid.getElement(indices)->setVn(-0.003);
+            }
+            // 上下左右の振動子を接続
+            vector<int> indices_u = {x, y + 1};
+            vector<int> indices_r = {x + 1, y};
+            vector<int> indices_d = {x, y - 1};
+            vector<int> indices_l = {x - 1, y};
+            vector<shared_ptr<SEO>> connections = {
+                seogrid.getElement(indices_u),
+                seogrid.getElement(indices_r),
+                seogrid.getElement(indices_d),
+                seogrid.getElement(indices_l)};
+            seogrid.getElement(indices)->setConnections(connections);
+        }
+    }
+}
+
+// dE
+
+// charge
