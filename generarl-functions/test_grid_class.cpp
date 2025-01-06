@@ -96,7 +96,7 @@ TEST_F(GridTest, OutOfRangeIndexTest)
 // Vn
 TEST_F(GridTest, VnCalcTest)
 {
-    int sx, sy = 31;
+    int sx = 31, sy = 31;
     vector<int> dimensions = {sx, sy}; // 31x31のグリッドを作成
     Grid<SEO> seogrid(dimensions); // 指定したサイズのseo型の配列を用意
     for (int y = 0; y < sy; y++)
@@ -105,23 +105,37 @@ TEST_F(GridTest, VnCalcTest)
         {
             // 指定した位置のパラメータを設定
             vector<int> indices = {x, y};
+            // 上下左右の振動子を接続
+            vector<int> indices_u;
+            vector<int> indices_r;
+            vector<int> indices_d;
+            vector<int> indices_l;
             // 偶数
             if ((x + y) % 2 == 0)
             {
                 seogrid.getElement(indices)->setUp(1.0, 0.001, 12.0, 2.0, 0.004, 4);
                 seogrid.getElement(indices)->setVn(0.003);
+                // cout << seogrid.getElement(indices)->getR() << endl;
+                indices_u = {1, 2};
+                indices_r = {2, 1};
+                indices_d = {1, 0};
+                indices_l = {0, 1};
             }
             // 奇数
             else
             {
                 seogrid.getElement(indices)->setUp(1.0, 0.001, 12.0, 2.0, -0.004, 4);
                 seogrid.getElement(indices)->setVn(-0.003);
+                indices_u = {1, 3};
+                indices_r = {2, 2};
+                indices_d = {1, 1};
+                indices_l = {0, 2};
             }
             // 上下左右の振動子を接続
-            vector<int> indices_u = {x, y + 1};
-            vector<int> indices_r = {x + 1, y};
-            vector<int> indices_d = {x, y - 1};
-            vector<int> indices_l = {x - 1, y};
+            // vector<int> indices_u = {x, y + 1};
+            // vector<int> indices_r = {x + 1, y};
+            // vector<int> indices_d = {x, y - 1};
+            // vector<int> indices_l = {x - 1, y};
             vector<shared_ptr<SEO>> connections = {
                 seogrid.getElement(indices_u),
                 seogrid.getElement(indices_r),
@@ -130,6 +144,15 @@ TEST_F(GridTest, VnCalcTest)
             seogrid.getElement(indices)->setConnections(connections);
         }
     }
+    seogrid.updateGridVn();
+    // 指定した位置のパラメータを設定
+    vector<int> indices = {0, 1};
+    cout << seogrid.getElement(indices)->getVn() << endl;
+    seogrid.updateGriddE();
+    cout << seogrid.getElement(indices)->getdE()["up"] << endl;
+    cout << seogrid.getElement(indices)->getQ() << endl;
+    seogrid.updateGridQn(0.1);
+    cout << seogrid.getElement(indices)->getQ() << endl;
 }
 
 // dE
