@@ -22,6 +22,17 @@ SEO::SEO(double r, double rj, double cj, double c, double vd, int legscounts)
 }
 
 //-----------セッター------------//
+// パラメータセットアップ
+void SEO::setUp(double r, double rj, double cj, double c, double vd, int legscounts)
+{
+    R = r;
+    Rj = rj;
+    Cj = cj;
+    C = c;
+    Vd = vd;
+    legs = legscounts;
+}
+
 // バイアス電圧を設定
 void SEO::setVias(const double vd)
 {
@@ -147,7 +158,6 @@ double SEO::getQ() const
 {
     return Q;
 }
-
 
 //-------- 汎用処理 -------------//
 // 0から1の間の乱数を生成
