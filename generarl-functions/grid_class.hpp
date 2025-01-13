@@ -11,6 +11,7 @@ class Grid
 private:
     vector<int> dimensions;           // グリッドの各次元のサイズ
     vector<shared_ptr<Element>> grid; // フラット化されたグリッドデータ
+    double minwt;                     // gridごとの最小の待ち時間
 
     // 多次元インデックスを1次元インデックスに変換
     int toFlatIndex(const vector<int> &indices) const;
