@@ -1,38 +1,43 @@
 #include <gtest/gtest.h>
-#include <stdexcept>
+#include "simulation.hpp"
+#include "grid_class.hpp"
 #include "seo_class.hpp"
 
-// GoogleTestのSetUpをオーバーライドしてパラメータのセットアップ
-class SEOTest : public ::testing::Test
-{
-protected:
-    unique_ptr<vector<vector<vector<shared_ptr<SEO>>>>> seoGrid;
-
-    void SetUp() override
-    {
-        int x = 2, y = 2, z = 2;
-
-        // 3次元ベクトル (サイズ: 2x2x2) を動的に生成
-        seoGrid = make_unique<vector<vector<vector<shared_ptr<SEO>>>>>(
-            z, vector<vector<shared_ptr<SEO>>>(y, vector<shared_ptr<SEO>>(x)));
-
-        // 各要素を生成して格納
-        for (int i = 0; i < z; ++i)
-        {
-            for (int j = 0; j < y; ++j)
-            {
-                for (int k = 0; k < x; ++k)
-                {
-                    (*seoGrid).at(i).at(j).at(k) = make_shared<SEO>(1.0, 0.001, 18.0, 2.0, 0.007, 3);
-                }
-            }
-        }
-
-        // [0][0][0]の振動子に[1][0][0],[0][1][0],[0][0][1]を接続
-        vector<shared_ptr<SEO>> connections = {
-            (*seoGrid).at(1).at(0).at(0),
-            (*seoGrid).at(0).at(1).at(0),
-            (*seoGrid).at(0).at(0).at(1)};
-        (*seoGrid).at(0).at(0).at(0)->setConnections(connections);
-    }
+// ここでは仮のElementクラスを定義
+class Element {
+public:
+    int value;
+    // 引数ありコンストラクタ
+    Element(int val) : value(val) {}
+    
+    // デフォルトコンストラクタを追加
+    Element() : value(0) {}  // 初期値を設定するか、必要に応じて適切に変更
 };
+
+// SimulationクラスとGridクラスのテスト
+class SimulationTest : public ::testing::Test {
+protected:
+    // シミュレーションのセットアップ
+    Simulation<Element> sim;
+
+    SimulationTest() : sim(1.0, 10.0) {} // dT=1.0, EndTime=10.0で初期化
+};
+
+// addGridメソッドのテスト
+TEST_F(SimulationTest, AddGridTest) {
+    // 追加するGridインスタンスを作成
+    vector<int> dims = {5, 5};  // 5x5の次元のGrid
+    Grid<Element> grid(dims);
+
+    // Gridインスタンスを格納したベクトルを作成
+    vector<Grid<Element>> Grids;
+    Grids.push_back(grid);  // Gridインスタンスをベクトルに追加
+
+    // addGridメソッドを実行
+    sim.addGrid(Grids);
+
+    // gridsに新しく追加されたGridが格納されているか確認
+    ASSERT_EQ(sim.getGrids().size(), 1);  // 新しいGridが1つ追加されていることを確認
+    ASSERT_EQ(sim.getGrids()[0].getDimensions()[0], 5);  // 追加したGridの次元を確認
+    ASSERT_EQ(sim.getGrids()[0].getDimensions()[1], 5);  // 追加したGridの次元を確認
+}

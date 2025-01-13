@@ -31,24 +31,23 @@ public:
     void runStep();
 
     // Gridインスタンスの管理
-    void addGrid(const vector<int> &dims);    // 新しいGridインスタンスを追加
-    void removeGrid(int index);               // Gridインスタンスを削除
+    void addGrid(const vector<Grid<Element>> &Gridinstance);    // 新しいGridインスタンスを追加
+    // void removeGrid(int index);               // Gridインスタンスを削除
 
     // シミュレーションの全体の実行
     void run(double dt, double endtime);
+
+    // テスト用
+    // girdを取得
+    vector<Grid<Element>>& getGrids();
 };
 
 //-------------public----------------//
 
 // コンストラクタの定義
 template <typename Element>
-Simulation<Element>::Simulation(double dT, double EndTime)
-    : t(0.0), dt(dT), endtime(EndTime)
-{
-    // 初期状態で1つのGridインスタンスを作成
-    vector<int> defaultDims = {10, 10}; // デフォルトのサイズを設定
-    grids.push_back(Grid<Element>(defaultDims)); // 最初のGridを追加
-}
+Simulation<Element>::Simulation(double dT, double EndTime) : t(0.0), dt(dT), endtime(EndTime){}
+
 
 // トンネル処理
 template <typename Element>
@@ -82,20 +81,20 @@ void Simulation<Element>::runStep()
     t += dt; // 時間を進める
 }
 
-// Gridインスタンスの管理
+// Gridインスタンスの配列を引数として受け取り、gridsに代入するメソッド
 template <typename Element>
-void Simulation<Element>::addGrid(const vector<int> &dims)
+void Simulation<Element>::addGrid(const vector<Grid<Element>> &Gridinstance)
 {
-    grids.push_back(Grid<Element>(dims)); // 新しいGridインスタンスを追加
+    grids = Gridinstance;  // Gridインスタンスの配列を代入
 }
 
-template <typename Element>
-void Simulation<Element>::removeGrid(int index)
-{
-    if (index >= 0 && index < grids.size()) {
-        grids.erase(grids.begin() + index); // 指定したインデックスのGridを削除
-    }
-}
+// template <typename Element>
+// void Simulation<Element>::removeGrid(int index)
+// {
+//     if (index >= 0 && index < grids.size()) {
+//         grids.erase(grids.begin() + index); // 指定したインデックスのGridを削除
+//     }
+// }
 
 // シミュレーションの全体の実行
 template <typename Element>
@@ -107,4 +106,9 @@ void Simulation<Element>::run(double dt, double endtime)
     }
 }
 
+// gridを取得
+template <typename Element>
+vector<Grid<Element>>& Simulation<Element>::getGrids() {
+    return grids;
+}
 #endif // SIMULATION_HPP
