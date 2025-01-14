@@ -20,12 +20,11 @@ public:
     // コンストラクタ（刻み時間とシミュレーション終了時間を入力）
     Simulation(double dT, double EndTime);
 
-
     // wtの比較
-    double comparewt();
+    pair<bool, shared_ptr<Grid<Element>>> comparewt();
 
     // トンネルの処理
-    void handleTunnels();
+    void handleTunnels(Grid<Element> &tunnelelement);
 
     // ファイル出力の処理
     void outputToFile() const;
@@ -51,12 +50,29 @@ public:
 template <typename Element>
 Simulation<Element>::Simulation(double dT, double EndTime) : t(0.0), dt(dT), endtime(EndTime) {}
 
+// wtの比較
+template <typename Element>
+pair<bool, shared_ptr<Grid<Element>>> Simulation<Element>::comparewt()
+{
+    double minwt = dt;
+    shared_ptr<Grid<Element>> tunnelelement = nullptr;
+    for (auto &grid : grids)
+    {
+        if (grid.gridminwt(dt)) // gridの中でwtを計算したもののみifを実行
+        {
+            minwt = min(minwt, grid.minwt); // 最小を更新
+            tunnelelement = make_shared<Grid<Element>>(grid); // gridをshared_ptrに変換
+        }
+    }
+    if (minwt < dt) return {true, tunnelelement};
+    return {false, nullptr};
+}
+
 // トンネル処理
 template <typename Element>
-void Simulation<Element>::handleTunnels()
+void Simulation<Element>::handleTunnels(Grid<Element> &tunnelelement)
 {
-    // トンネル発生のロジックをここに追加
-    // tunnelマップを使って、トンネルを発生させる素子を処理する
+    tunnelelement->tunnelplace->setTunnel(tunnelelement->tunneldirection);
 }
 
 // ファイル出力の処理
@@ -71,6 +87,7 @@ void Simulation<Element>::outputToFile() const
 template <typename Element>
 void Simulation<Element>::runStep()
 {
+    double steptime = dt;
     // ファイル出力
     outputToFile();
     // Vnの更新(5回実行)
@@ -86,24 +103,20 @@ void Simulation<Element>::runStep()
     {
         grid.updateGriddE();
     }
-    // wtの計算
-    for (auto &grid : grids)
+    // wtの計算とトンネル処理
+    auto compared = this->comparewt();
+    if(compared.first)
     {
-        double minwt = dt;
-        if (grid.gridminwt(dt))
-        {
-            minwt = min(minwt, grid.minwt);
-        }
-        if (minwt < dt)
+        handleTunnels(*compared.second); // 参照渡しでトンネル処理
+        steptime = compared.second->minwt;
     }
-    // トンネルの処理
-    handleTunnels();
+    
     // 電荷のチャージ
     for (auto &grid : grids)
     {
-        grid.updateGridQn(dt);
+        grid.updateGridQn(steptime);
     }
-    t += dt; // 時間を進める
+    t += steptime; // 時間を進める
 }
 
 // Gridインスタンスの配列を引数として受け取り、gridsに代入するメソッド

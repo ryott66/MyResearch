@@ -14,7 +14,9 @@
         "stdexcept": "cpp",
         "iostream": "cpp",
         "ostream": "cpp",
-        "vector": "cpp"
+        "vector": "cpp",
+        "random": "cpp",
+        "memory": "cpp"
     },
     "editor.tokenColorCustomizations": {
         "textMateRules": [
