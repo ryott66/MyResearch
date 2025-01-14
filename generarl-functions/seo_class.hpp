@@ -82,8 +82,8 @@ public:
     // Qの取得
     double getQ() const;
 
-    // wtの取得(引数で"up"か"down"の指定)
-    double getWT(const string& direction) const;
+    // wtの取得
+    map<string, double> getWT() const;
 
     //-------- 汎用処理 -------------//
     // 0から1の間の乱数を生成

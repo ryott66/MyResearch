@@ -157,6 +157,12 @@ double SEO::getQ() const
     return Q;
 }
 
+// wtの取得
+map<string, double> SEO::getWT() const
+{
+    return wt;
+}
+
 //-------- 汎用処理 -------------//
 // 0から1の間の乱数を生成
 double SEO::Random()
@@ -220,15 +226,4 @@ void SEO::setVn(double vn)
 void SEO::setQ(double qn)
 {
     Q = qn;
-}
-
-// テスト用wtゲッター
-double SEO::getWT(const string &direction) const
-{
-    auto it = wt.find(direction);
-    if (it != wt.end())
-    {
-        return it->second;
-    }
-    return 0.0;
 }

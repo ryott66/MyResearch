@@ -14,12 +14,12 @@ private:
     double dt;                                       // 刻み時間[ns]
     double endtime;                                  // シミュレーションの終了時間[ns]
     vector<Grid<Element>> grids;                     // 複数のGridインスタンスを保持するベクトル
-    map<vector<shared_ptr<Element>>, string> tunnel; // トンネルを発生させる素子とトンネル方向
     vector<FILE *> fp;                               // 出力ファイルポインタのベクトル
 
 public:
     // コンストラクタ（刻み時間とシミュレーション終了時間を入力）
     Simulation(double dT, double EndTime);
+
 
     // wtの比較
     double comparewt();
@@ -89,7 +89,12 @@ void Simulation<Element>::runStep()
     // wtの計算
     for (auto &grid : grids)
     {
-        grid.updateGridwt();
+        double minwt = dt;
+        if (grid.gridminwt(dt))
+        {
+            minwt = min(minwt, grid.minwt);
+        }
+        if (minwt < dt)
     }
     // トンネルの処理
     handleTunnels();

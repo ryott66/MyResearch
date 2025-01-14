@@ -11,8 +11,9 @@ class Grid
 private:
     vector<int> dimensions;           // グリッドの各次元のサイズ
     vector<shared_ptr<Element>> grid; // フラット化されたグリッドデータ
+    shared_ptr<Element> tunnelplace;  // トンネルを発生させる素子
+    string tunneldirection;           // トンネルの方向
     double minwt;                     // gridごとの最小の待ち時間
-
     // 多次元インデックスを1次元インデックスに変換
     int toFlatIndex(const vector<int> &indices) const;
 
@@ -33,7 +34,7 @@ public:
     void updateGriddE();
 
     // Gridインスタンス全体のwtを計算して比較、minwtに代入
-    void gridminwt(const double dt);
+    bool gridminwt(const double dt);
 
     // Gridインスタンス全体のノード電荷を計算して更新
     void updateGridQn(const double dt);
@@ -138,22 +139,26 @@ void Grid<Element>::updateGriddE()
 
 // Gridインスタンス全体のwtを計算して比較、minwtに代入
 template <typename Element>
-void Grid<Element>::gridminwt(const double dt)
+bool Grid<Element>::gridminwt(const double dt)
 {
     minwt = dt;
     // トンネル待ち時間wtを計算、比較
     for (auto &element : grid)
     {
         // dEが正の場合はwtが計算されてtrueが返るため、if文が実行される
-        if(element->calculateTunnelWt())
+        if (element->calculateTunnelWt())
         {
-            double tmpwt = 0;
             // wtは計算される場合以外は0であるため、大きい方が計算された側(wtは常に正)
-            tmpwt = max(element->getWT("up"), element->getWT("down"));
-            // 最小を更新
-            minwt = min(minwt, tmpwt);
+            double tmpwt = max(element->getWT()["up"], element->getWT()["down"]);
+            if (tmpwt == element->getWT()["up"]) tunneldirection = "up";
+            else tunneldirection = "down";
+            tunnelplace = element;     // どの素子でトンネルが発生するか
+            minwt = min(minwt, tmpwt); // 最小を更新
         }
     }
+    // 更新された場合はtrue
+    if (minwt < dt) return true;
+    return false;
 }
 
 // Gridインスタンス全体のノード電荷を計算して更新

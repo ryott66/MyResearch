@@ -160,7 +160,7 @@ TEST_F(GridTest, VnCalcTest)
     seogrid.updateGridQn(0.1);
     cout << "Qn: " << seogrid.getElement(indices)->getQ() << endl;
     seogrid.gridminwt(dt);
-    cout << "wt[up]: " << seogrid.getElement(indices)->getWT("up") << endl;
+    cout << "wt[up]: " << seogrid.getElement(indices)->getWT()["up"] << endl;
 
     indices = {1, 1};
     cout << "Vd: " << seogrid.getElement(indices)->getVd() << endl;
@@ -171,11 +171,11 @@ TEST_F(GridTest, VnCalcTest)
     seogrid.updateGridQn(0.1);
     cout << "Qn: " << seogrid.getElement(indices)->getQ() << endl;
     seogrid.gridminwt(dt);
-    cout << "wt[down]: " << seogrid.getElement(indices)->getWT("down") << endl;
+    cout << "wt[down]: " << seogrid.getElement(indices)->getWT()["down"] << endl;
     seogrid.getElement(indices)->setdE("down", 1);
     seogrid.gridminwt(dt);
-    cout << "wt[down]: " << seogrid.getElement(indices)->getWT("down") << endl;
-    ASSERT_GT(seogrid.getElement(indices)->getWT("down"), 0);
+    cout << "wt[down]: " << seogrid.getElement(indices)->getWT()["down"] << endl;
+    ASSERT_GT(seogrid.getElement(indices)->getWT()["down"], 0);
 }
 
 // dE
