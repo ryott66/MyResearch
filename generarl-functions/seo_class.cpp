@@ -90,25 +90,23 @@ void SEO::setNodeCharge(const double dt)
     Q += (Vd - Vn) * dt / R;
 }
 
-// トンネル待ち時間計算
-void SEO::calculateTunnelWt()
+// トンネル待ち時間計算(upまたはdownが正の時にwtを計算してtrueを返す)
+bool SEO::calculateTunnelWt()
 {
+    // 初期化
+    wt["up"] = 0;
+    wt["down"] = 0;
     if (dE["up"] > 0)
     {
         wt["up"] = (e * e * Rj / dE["up"]) * log(1 / Random());
-    }
-    else
-    {
-        wt["up"] = 0;
+        return true;
     }
     if (dE["down"] > 0)
     {
         wt["down"] = (e * e * Rj / dE["down"]) * log(1 / Random());
+        return true;
     }
-    else
-    {
-        wt["down"] = 0;
-    }
+    return false;
 }
 
 // 振動子のトンネル

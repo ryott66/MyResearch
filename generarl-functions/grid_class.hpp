@@ -32,6 +32,9 @@ public:
     // Gridインスタンス全体のdEを計算して更新
     void updateGriddE();
 
+    // Gridインスタンス全体のwtを計算して比較、minwtに代入
+    void gridminwt(const double dt);
+
     // Gridインスタンス全体のノード電荷を計算して更新
     void updateGridQn(const double dt);
 
@@ -130,6 +133,26 @@ void Grid<Element>::updateGriddE()
     for (auto &element : grid)
     {
         element->setdEcalc();
+    }
+}
+
+// Gridインスタンス全体のwtを計算して比較、minwtに代入
+template <typename Element>
+void Grid<Element>::gridminwt(const double dt)
+{
+    minwt = dt;
+    // トンネル待ち時間wtを計算、比較
+    for (auto &element : grid)
+    {
+        // dEが正の場合はwtが計算されてtrueが返るため、if文が実行される
+        if(element->calculateTunnelWt())
+        {
+            double tmpwt = 0;
+            // wtは計算される場合以外は0であるため、大きい方が計算された側(wtは常に正)
+            tmpwt = max(element->getWT("up"), element->getWT("down"));
+            // 最小を更新
+            minwt = min(minwt, tmpwt);
+        }
     }
 }
 
