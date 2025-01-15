@@ -1,6 +1,7 @@
 #ifndef SIMULATION_HPP
 #define SIMULATION_HPP
 
+#include <fstream>
 #include "seo_class.hpp"
 #include "grid_class.hpp"
 
@@ -14,7 +15,7 @@ private:
     double dt;                                       // 刻み時間[ns]
     double endtime;                                  // シミュレーションの終了時間[ns]
     vector<Grid<Element>> grids;                     // 複数のGridインスタンスを保持するベクトル
-    vector<FILE *> fp;                               // 出力ファイルポインタのベクトル
+    vector<string> filenames;                        // 出力するファイルのベクトル
 
 public:
     // コンストラクタ（刻み時間とシミュレーション終了時間を入力）
@@ -125,14 +126,6 @@ void Simulation<Element>::addGrid(const vector<Grid<Element>> &Gridinstance)
 {
     grids = Gridinstance; // Gridインスタンスの配列を代入
 }
-
-// template <typename Element>
-// void Simulation<Element>::removeGrid(int index)
-// {
-//     if (index >= 0 && index < grids.size()) {
-//         grids.erase(grids.begin() + index); // 指定したインデックスのGridを削除
-//     }
-// }
 
 // シミュレーションの全体の実行
 template <typename Element>
