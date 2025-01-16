@@ -9,9 +9,6 @@ template <typename Element>
 class Grid
 {
 private:
-    string gridname;                  // ファイルに出力する際の表示名
-    int x;                            // 出力する際の横のサイズ
-    int y;                            // 出力する際の縦のサイズ
     vector<int> dimensions;           // グリッドの各次元のサイズ ex.[5][4][3]であれば(5,4,3)
     vector<shared_ptr<Element>> grid; // フラット化されたグリッドデータ
     shared_ptr<Element> tunnelplace;  // トンネルを発生させる素子
@@ -21,8 +18,8 @@ private:
     int toFlatIndex(const vector<int> &indices) const;
 
 public:
-    // コンストラクタ（ファイル名、横、縦、指定する型、サイズで動的配列を確保）
-    Grid(string name, int size_x, int size_y, const vector<int> &dims);
+    // コンストラクタ（指定する型、サイズで動的配列を確保）
+    Grid(const vector<int> &dims);
 
     // indicesで指定した場所のオブジェクトを取得
     shared_ptr<Element> getElement(const vector<int> &indices) const;
@@ -77,7 +74,7 @@ int Grid<Element>::toFlatIndex(const vector<int> &indices) const
 
 // コンストラクタ（指定する型、サイズで動的配列を確保）
 template <typename Element>
-Grid<Element>::Grid(string name, int size_x, int size_y, const vector<int> &dims) : dimensions(dims)
+Grid<Element>::Grid(const vector<int> &dims) : dimensions(dims)
 {
     if (dims.empty())
     {

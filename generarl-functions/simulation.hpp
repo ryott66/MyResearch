@@ -15,7 +15,6 @@ private:
     double dt;                                       // 刻み時間[ns]
     double endtime;                                  // シミュレーションの終了時間[ns]
     vector<Grid<Element>> grids;                     // 複数のGridインスタンスを保持するベクトル
-    vector<string> filenames;                        // 出力するファイルのベクトル
 
 public:
     // コンストラクタ（刻み時間とシミュレーション終了時間を入力）
