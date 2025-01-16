@@ -9,6 +9,8 @@
 #include <ctime>
 #include <sstream>
 
+#include<grid_class.hpp>
+
 using namespace std;
 
 template <typename Element>
@@ -38,22 +40,21 @@ public:
     // データをファイルに書き出す
     // ほかの出力をしたい場合は関数を引数として渡すことによって行う
     void writeToFile2dim() const;
-    
 };
 
 // -----------private---------------
 
 // 現在の日時を文字列として取得する関数
 template <typename Element>
-string PrintData<Element>:: getCurrentTimeAsString()
-    {
-        auto now = chrono::system_clock::now();
-        auto now_t = chrono::system_clock::to_time_t(now);
-        tm tm = *localtime(&now_t);
-        ostringstream oss;
-        oss << put_time(&tm, "%Y%m%d_%H%M%S");
-        return oss.str();
-    }
+string PrintData<Element>::getCurrentTimeAsString()
+{
+    auto now = chrono::system_clock::now();
+    auto now_t = chrono::system_clock::to_time_t(now);
+    tm tm = *localtime(&now_t);
+    ostringstream oss;
+    oss << put_time(&tm, "%Y%m%d_%H%M%S");
+    return oss.str();
+}
 
 // -----------public------------------
 
@@ -67,7 +68,7 @@ PrintData<Element>::PrintData(const string &baseFilename)
 
 // ファイルを開く
 template <typename Element>
-void PrintData<Element>:: openFile()
+void PrintData<Element>::openFile()
 {
     outputFile.open(filename, ios::out); // ファイルのモード（出力）
     if (!outputFile.is_open())
@@ -78,7 +79,7 @@ void PrintData<Element>:: openFile()
 
 // ファイルを閉じる
 template <typename Element>
-void PrintData<Element>:: closeFile()
+void PrintData<Element>::closeFile()
 {
     if (outputFile.is_open())
     {
@@ -88,7 +89,7 @@ void PrintData<Element>:: closeFile()
 
 // データの設定
 template <typename Element>
-void PrintData<Element>:: updateData(const vector<vector<Element>> &newData)
+void PrintData<Element>::updateData(const vector<vector<Element>> &newData)
 {
     data = newData; // 新しいデータで上書き
 }
@@ -96,7 +97,7 @@ void PrintData<Element>:: updateData(const vector<vector<Element>> &newData)
 // データをファイルに書き出す
 // ほかの出力をしたい場合は関数を引数として渡すことによって行う
 template <typename Element>
-void PrintData<Element>:: writeToFile2dim() const
+void PrintData<Element>::writeToFile2dim() const
 {
     if (!outputFile.is_open())
     {
@@ -104,23 +105,38 @@ void PrintData<Element>:: writeToFile2dim() const
         return;
     }
 
-    for (int x = 0; x < data.size() - 1; x++) {
-        for (int y = 0; y < data.at(x).size(); y++) {
-            if ((x + y) % 2 == 0) {
-                if (y == 0) {
+    for (int x = 0; x < data.size() - 1; x++)
+    {
+        for (int y = 0; y < data.at(x).size(); y++)
+        {
+            if ((x + y) % 2 == 0)
+            {
+                if (y == 0)
+                {
                     outputFile << x << " " << y << " " << data.at(y + 1).at(x + 1).getVn() << endl;
-                } else if (y == data.at(x).size() - 1) {
-                    outputFile << x << " " << y << " " << -data.at(y).at(x + 1).getVn() << endl;  // abs
-                } else {
+                }
+                else if (y == data.at(x).size() - 1)
+                {
+                    outputFile << x << " " << y << " " << -data.at(y).at(x + 1).getVn() << endl; // abs
+                }
+                else
+                {
                     outputFile << x << " " << y << " " << -data.at(y).at(x + 1).getVn() << endl;
                     outputFile << x << " " << y << " " << data.at(y + 1).at(x + 1).getVn() << endl;
                 }
-            } else {
-                if (y == 0) {
+            }
+            else
+            {
+                if (y == 0)
+                {
                     outputFile << x << " " << y << " " << -data.at(y + 1).at(x + 1).getVn() << endl;
-                } else if (y == data.at(x).size() - 1) {
+                }
+                else if (y == data.at(x).size() - 1)
+                {
                     outputFile << x << " " << y << " " << data.at(y).at(x + 1).getVn() << endl;
-                } else {
+                }
+                else
+                {
                     outputFile << x << " " << y << " " << data.at(y).at(x + 1).getVn() << endl;
                     outputFile << x << " " << y << " " << -data.at(y + 1).at(x + 1).getVn() << endl;
                 }
@@ -129,22 +145,36 @@ void PrintData<Element>:: writeToFile2dim() const
 
         outputFile << endl;
 
-        for (int y = 0; y < data.at(x).size(); y++) {
-            if ((x + y) % 2 == 0) {
-                if (y == 0) {
+        for (int y = 0; y < data.at(x).size(); y++)
+        {
+            if ((x + y) % 2 == 0)
+            {
+                if (y == 0)
+                {
                     outputFile << x + 1 << " " << y << " " << data.at(y + 1).at(x + 1).getVn() << endl;
-                } else if (y == data.at(x).size() - 1) {
+                }
+                else if (y == data.at(x).size() - 1)
+                {
                     outputFile << x + 1 << " " << y << " " << -data.at(y).at(x + 1).getVn() << endl;
-                } else {
+                }
+                else
+                {
                     outputFile << x + 1 << " " << y << " " << -data.at(y).at(x + 1).getVn() << endl;
                     outputFile << x + 1 << " " << y << " " << data.at(y + 1).at(x + 1).getVn() << endl;
                 }
-            } else {
-                if (y == 0) {
+            }
+            else
+            {
+                if (y == 0)
+                {
                     outputFile << x + 1 << " " << y << " " << -data.at(y + 1).at(x + 1).getVn() << endl;
-                } else if (y == data.at(x).size() - 1) {
+                }
+                else if (y == data.at(x).size() - 1)
+                {
                     outputFile << x + 1 << " " << y << " " << data.at(y).at(x + 1).getVn() << endl;
-                } else {
+                }
+                else
+                {
                     outputFile << x + 1 << " " << y << " " << data.at(y).at(x + 1).getVn() << endl;
                     outputFile << x + 1 << " " << y << " " << -data.at(y + 1).at(x + 1).getVn() << endl;
                 }

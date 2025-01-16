@@ -4,6 +4,7 @@
 #include <fstream>
 #include "seo_class.hpp"
 #include "grid_class.hpp"
+#include "printdata_class.hpp"
 
 // テンプレートを利用しているためファイル分割は無し
 template <typename Element>
@@ -14,7 +15,10 @@ private:
     double t;                                        // 現在のシミュレーション時間[ns]
     double dt;                                       // 刻み時間[ns]
     double endtime;                                  // シミュレーションの終了時間[ns]
+    double outputInterval;                           // ファイルに出力する時間間隔(0.1)
+    double accumulatedTime;                          // ファイル出力ごとの累積時間
     vector<Grid<Element>> grids;                     // 複数のGridインスタンスを保持するベクトル
+    vector<PrintData<Element>> printdatavector;      // 出力するデータを保持するベクトル
 
 public:
     // コンストラクタ（刻み時間とシミュレーション終了時間を入力）
@@ -26,6 +30,15 @@ public:
     // トンネルの処理
     void handleTunnels(Grid<Element> &tunnelelement);
 
+    // ファイルを開く
+    void openFiles() const;
+
+    // ファイルを閉じる
+    void closeFiles() const;
+
+    // 出力するデータの２次元配列を入力
+    void closeFiles() const;
+
     // ファイル出力の処理
     void outputToFile() const;
 
@@ -34,13 +47,12 @@ public:
 
     // Gridインスタンスの管理
     void addGrid(const vector<Grid<Element>> &Gridinstance); // 新しいGridインスタンスを追加
-    // void removeGrid(int index);               // Gridインスタンスを削除
 
     // シミュレーションの全体の実行
     void run(double dt, double endtime);
 
     // テスト用
-    // girdを取得
+    // gridを取得
     vector<Grid<Element>> &getGrids();
 };
 
@@ -48,7 +60,8 @@ public:
 
 // コンストラクタの定義
 template <typename Element>
-Simulation<Element>::Simulation(double dT, double EndTime) : t(0.0), dt(dT), endtime(EndTime) {}
+Simulation<Element>::Simulation(double dT, double EndTime) : t(0.0), dt(dT), 
+endtime(EndTime),outputInterval(0.1), accumulatedTime(0.0) {}
 
 // wtの比較
 template <typename Element>
@@ -75,12 +88,33 @@ void Simulation<Element>::handleTunnels(Grid<Element> &tunnelelement)
     tunnelelement->tunnelplace->setTunnel(tunnelelement->tunneldirection);
 }
 
+// ファイルを開く
+template <typename Element>
+void Simulation<Element>::openFiles() const
+{
+    for (auto &outputdata : printdatavector)
+    {
+        outputdata.openFile();
+    }
+}
+
+// ファイルを閉じる
+template <typename Element>
+void Simulation<Element>::closeFiles() const
+{
+    for (auto &outputdata : printdatavector)
+    {
+        outputdata.closeFile();
+    }
+}
+
 // ファイル出力の処理
 template <typename Element>
 void Simulation<Element>::outputToFile() const
 {
-    // ファイル出力処理をここに追加
-    // fpを使って、必要なデータを出力ファイルに保存する
+    if(accumulatedTime >= outputInterval){
+        accumulatedTime -= outputInterval
+    }
 }
 
 // シミュレーションの１ステップを実行
@@ -117,6 +151,7 @@ void Simulation<Element>::runStep()
         grid.updateGridQn(steptime);
     }
     t += steptime; // 時間を進める
+    accumulatedTime += steptime; // 累積時間
 }
 
 // Gridインスタンスの配列を引数として受け取り、gridsに代入するメソッド
@@ -130,11 +165,15 @@ void Simulation<Element>::addGrid(const vector<Grid<Element>> &Gridinstance)
 template <typename Element>
 void Simulation<Element>::run(double dt, double endtime)
 {
+    // ファイルを開く
+    openFiles();
     // シミュレーションが終了するまでステップを繰り返し実行
     while (t < endtime)
     {
         runStep(); // 1ステップ実行
     }
+    // ファイルを閉じる
+    closeFiles();
 }
 
 // gridを取得

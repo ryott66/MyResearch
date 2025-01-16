@@ -35,7 +35,7 @@ protected:
 
     void SetUp() override
     {
-        grid = new Grid<MockElement>("mock",2,3,dimensions);
+        grid = new Grid<MockElement>(dimensions);
     }
 
     void TearDown() override
@@ -48,18 +48,18 @@ protected:
 TEST_F(GridTest, Constructor)
 {
     // 正常な次元指定
-    Grid<SEO> grid1("grid1",3,4,{3, 4});
+    Grid<SEO> grid1({3, 4});
     EXPECT_EQ(grid1.getDimensions(), vector<int>({3, 4}));
 
     // 正常な次元指定
-    Grid<SEO> grid2("gird2",4,5,{1, 2, 3, 4, 5});
+    Grid<SEO> grid2({1, 2, 3, 4, 5});
     EXPECT_EQ(grid2.getDimensions(), vector<int>({1, 2, 3, 4, 5}));
 
     // 無効な次元指定（空）
-    EXPECT_THROW(Grid<SEO>("error",1,1,{}), invalid_argument);
+    EXPECT_THROW(Grid<SEO>({}), invalid_argument);
 
     // 無効な次元指定（負の値）
-    EXPECT_THROW(Grid<SEO>("error",1,1,{-1, 3}), invalid_argument);
+    EXPECT_THROW(Grid<SEO>({-1, 3}), invalid_argument);
 }
 
 // getElementのテスト
@@ -99,7 +99,7 @@ TEST_F(GridTest, VnCalcTest)
     double dt = 0.1;
     int sx = 31, sy = 31;
     vector<int> dimensions = {sx, sy}; // 31x31のグリッドを作成
-    Grid<SEO> seogrid("seogrid",31,31,dimensions);     // 指定したサイズのseo型の配列を用意
+    Grid<SEO> seogrid(dimensions);     // 指定したサイズのseo型の配列を用意
     for (int y = 0; y < sy; y++)
     {
         for (int x = 0; x < sx; x++)
