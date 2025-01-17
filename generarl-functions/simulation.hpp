@@ -49,7 +49,7 @@ public:
     void addGrid(const vector<Grid<Element>> &Gridinstance); // 新しいGridインスタンスを追加
 
     // シミュレーションの全体の実行
-    void run(double dt, double endtime);
+    void run();
 
     // テスト用
     // gridを取得
@@ -163,7 +163,7 @@ void Simulation<Element>::addGrid(const vector<Grid<Element>> &Gridinstance)
 
 // シミュレーションの全体の実行
 template <typename Element>
-void Simulation<Element>::run(double dt, double endtime)
+void Simulation<Element>::run()
 {
     // ファイルを開く
     openFiles();
