@@ -1,107 +1,185 @@
 #ifndef SIMULATION_HPP
 #define SIMULATION_HPP
 
+#include <fstream>
 #include "seo_class.hpp"
+#include "grid_class.hpp"
+#include "printdata_class.hpp"
+
+// テンプレートを利用しているためファイル分割は無し
+template <typename Element>
 
 class Simulation
 {
 private:
-    int sx;                                      // x軸方向のサイズ
-    int sy;                                      // y軸方向のサイズ
-    int sz;                                      // z軸方向のサイズ
-    double t;                                    // 現在のシミュレーション時間[ns]
-    double dt;                                   // 刻み時間[ns]
-    double endtime;                              // シミュレーションの終了時間[ns]
-    map<vector<shared_ptr<SEO>>, string> tunnel; // トンネルを発生させる素子とトンネル方向
-    vector<FILE *> fp;                           // 出力ファイルポインタのベクトル
+    double t;                                        // 現在のシミュレーション時間[ns]
+    double dt;                                       // 刻み時間[ns]
+    double endtime;                                  // シミュレーションの終了時間[ns]
+    double outputInterval;                           // ファイルに出力する時間間隔(0.1)
+    double accumulatedTime;                          // ファイル出力ごとの累積時間
+    vector<Grid<Element>> grids;                     // 複数のGridインスタンスを保持するベクトル
+    vector<PrintData<Element>> printdatavector;      // 出力するデータを保持するベクトル
 
 public:
-//     Simulation(double vds, double rj, double r, double cj, double c)
-//         : t(0.0), st(T_TRG - 1)
-//     {
-//         initialize(vds, rj, r, cj, c);
-//     }
+    // コンストラクタ（刻み時間とシミュレーション終了時間を入力）
+    Simulation(double dT, double EndTime);
 
-//     void initialize(double vds, double rj, double r, double cj, double c)
-//     {
-//         grid.resize(tate, std::vector<SEO>(yoko, SEO(r, rj, cj, c, vds)));
-//         char filename[] = "outside.dat";
-//         if (fopen_s(&fp, filename, "w") != 0)
-//         {
-//             throw std::runtime_error("Failed to open output file.");
-//         }
-//     }
+    // wtの比較
+    pair<bool, shared_ptr<Grid<Element>>> comparewt();
 
-//     double makerand()
-//     {
-//         return static_cast<double>(rand()) / RAND_MAX;
-//     }
+    // トンネルの処理
+    void handleTunnels(Grid<Element> &tunnelelement);
+
+    // ファイルを開く
+    void openFiles() const;
+
+    // ファイルを閉じる
+    void closeFiles() const;
+
+    // 出力するデータの２次元配列を入力
+    void closeFiles() const;
+
+    // ファイル出力の処理
+    void outputToFile() const;
+
+    // シミュレーションの１ステップ
+    void runStep();
+
+    // Gridインスタンスの管理
+    void addGrid(const vector<Grid<Element>> &Gridinstance); // 新しいGridインスタンスを追加
 
     // シミュレーションの全体の実行
     void run(double dt, double endtime);
-//     {
-//         srand(static_cast<unsigned>(time(nullptr)));
-//         while (t <= T_END)
-//         {
-//             step();
-//         }
-//         fclose(fp);
-//     }
 
-//     void step()
-//     {
-//         double Tmin = dt;
-//         int tempx = -1, tempy = -1, sflag = 0;
-
-//         if (t >= T_TRG && st == T_TRG - 1)
-//         {
-//             grid[0][1].updateCharge(0.02);
-//         }
-
-//         for (int y = 1; y < tate - 1; ++y)
-//         {
-//             for (int x = 1; x < yoko - 1; ++x)
-//             {
-//                 auto &node = grid[y][x];
-
-//                 node.setSurroundingVoltages({
-//                     grid[y][x - 1].getVoltage(),
-//                     grid[y - 1][x].getVoltage(),
-//                     grid[y][x + 1].getVoltage(),
-//                     grid[y + 1][x].getVoltage(),
-//                 });
-
-//                 node.calculateNodeVoltage();
-
-//                 double dEup = node.calculateEnergyChange(true);
-//                 double dEdown = node.calculateEnergyChange(false);
-
-//                 double r = makerand();
-//                 if (dEup > 0 || dEdown > 0)
-//                 {
-//                     double Ganma = std::min(dEup, dEdown) / (e * e * 0.002);
-//                     double T = (1 / Ganma) * std::log(1 / r);
-//                     if (T < Tmin)
-//                     {
-//                         Tmin = T;
-//                         tempx = x;
-//                         tempy = y;
-//                         sflag = (dEup < dEdown) ? 1 : 2;
-//                     }
-//                 }
-//             }
-//         }
-
-//         if (Tmin != dt && tempx != -1 && tempy != -1)
-//         {
-//             grid[tempy][tempx].tunnel(
-//                 grid[tempy][tempx].calculateEnergyChange(true),
-//                 grid[tempy][tempx].calculateEnergyChange(false),
-//                 sflag);
-//         }
-
-//         t += Tmin;
-//     }
+    // テスト用
+    // gridを取得
+    vector<Grid<Element>> &getGrids();
 };
 
+//-------------public----------------//
+
+// コンストラクタの定義
+template <typename Element>
+Simulation<Element>::Simulation(double dT, double EndTime) : t(0.0), dt(dT), 
+endtime(EndTime),outputInterval(0.1), accumulatedTime(0.0) {}
+
+// wtの比較
+template <typename Element>
+pair<bool, shared_ptr<Grid<Element>>> Simulation<Element>::comparewt()
+{
+    double minwt = dt;
+    shared_ptr<Grid<Element>> tunnelelement = nullptr;
+    for (auto &grid : grids)
+    {
+        if (grid.gridminwt(dt)) // gridの中でwtを計算したもののみifを実行
+        {
+            minwt = min(minwt, grid.minwt); // 最小を更新
+            tunnelelement = make_shared<Grid<Element>>(grid); // gridをshared_ptrに変換
+        }
+    }
+    if (minwt < dt) return {true, tunnelelement};
+    return {false, nullptr};
+}
+
+// トンネル処理
+template <typename Element>
+void Simulation<Element>::handleTunnels(Grid<Element> &tunnelelement)
+{
+    tunnelelement->tunnelplace->setTunnel(tunnelelement->tunneldirection);
+}
+
+// ファイルを開く
+template <typename Element>
+void Simulation<Element>::openFiles() const
+{
+    for (auto &outputdata : printdatavector)
+    {
+        outputdata.openFile();
+    }
+}
+
+// ファイルを閉じる
+template <typename Element>
+void Simulation<Element>::closeFiles() const
+{
+    for (auto &outputdata : printdatavector)
+    {
+        outputdata.closeFile();
+    }
+}
+
+// ファイル出力の処理
+template <typename Element>
+void Simulation<Element>::outputToFile() const
+{
+    if(accumulatedTime >= outputInterval){
+        accumulatedTime -= outputInterval
+    }
+}
+
+// シミュレーションの１ステップを実行
+template <typename Element>
+void Simulation<Element>::runStep()
+{
+    double steptime = dt;
+    // ファイル出力
+    outputToFile();
+    // Vnの更新(5回実行)
+    for (int i = 0; i < 5; i++)
+    {
+        for (auto &grid : grids)
+        {
+            grid.updateGridVn();
+        }
+    }
+    // dEの計算
+    for (auto &grid : grids)
+    {
+        grid.updateGriddE();
+    }
+    // wtの計算とトンネル処理
+    auto compared = this->comparewt();
+    if(compared.first)
+    {
+        handleTunnels(*compared.second); // 参照渡しでトンネル処理
+        steptime = compared.second->minwt;
+    }
+    
+    // 電荷のチャージ
+    for (auto &grid : grids)
+    {
+        grid.updateGridQn(steptime);
+    }
+    t += steptime; // 時間を進める
+    accumulatedTime += steptime; // 累積時間
+}
+
+// Gridインスタンスの配列を引数として受け取り、gridsに代入するメソッド
+template <typename Element>
+void Simulation<Element>::addGrid(const vector<Grid<Element>> &Gridinstance)
+{
+    grids = Gridinstance; // Gridインスタンスの配列を代入
+}
+
+// シミュレーションの全体の実行
+template <typename Element>
+void Simulation<Element>::run(double dt, double endtime)
+{
+    // ファイルを開く
+    openFiles();
+    // シミュレーションが終了するまでステップを繰り返し実行
+    while (t < endtime)
+    {
+        runStep(); // 1ステップ実行
+    }
+    // ファイルを閉じる
+    closeFiles();
+}
+
+// gridを取得
+template <typename Element>
+vector<Grid<Element>> &Simulation<Element>::getGrids()
+{
+    return grids;
+}
 #endif // SIMULATION_HPP

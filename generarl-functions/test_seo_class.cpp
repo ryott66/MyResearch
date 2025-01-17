@@ -199,8 +199,8 @@ TEST_F(SEOTest, CalculateTunnelWt)
     // トンネル待ち時間を計算
     oscillator->calculateTunnelWt();
     // 結果を検証
-    EXPECT_NE(oscillator->getWT("up"), 0);
-    EXPECT_EQ(oscillator->getWT("down"), 0);
+    EXPECT_NE(oscillator->getWT()["up"], 0);
+    EXPECT_EQ(oscillator->getWT()["down"], 0);
 
     // エネルギー変化量をセット
     oscillator->setdE("up", -1);  // 上方向のエネルギー変化量
@@ -209,8 +209,8 @@ TEST_F(SEOTest, CalculateTunnelWt)
     // トンネル待ち時間を計算
     oscillator->calculateTunnelWt();
     // 結果を検証
-    EXPECT_EQ(oscillator->getWT("up"), 0);
-    EXPECT_NE(oscillator->getWT("down"), 0);
+    EXPECT_EQ(oscillator->getWT()["up"], 0);
+    EXPECT_NE(oscillator->getWT()["down"], 0);
 }
 
 // テストケース: トンネル発生の動作確認

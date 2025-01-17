@@ -96,9 +96,10 @@ TEST_F(GridTest, OutOfRangeIndexTest)
 // Vn
 TEST_F(GridTest, VnCalcTest)
 {
+    double dt = 0.1;
     int sx = 31, sy = 31;
     vector<int> dimensions = {sx, sy}; // 31x31のグリッドを作成
-    Grid<SEO> seogrid(dimensions); // 指定したサイズのseo型の配列を用意
+    Grid<SEO> seogrid(dimensions);     // 指定したサイズのseo型の配列を用意
     for (int y = 0; y < sy; y++)
     {
         for (int x = 0; x < sx; x++)
@@ -144,15 +145,37 @@ TEST_F(GridTest, VnCalcTest)
             seogrid.getElement(indices)->setConnections(connections);
         }
     }
-    seogrid.updateGridVn();
-    // 指定した位置のパラメータを設定
     vector<int> indices = {0, 1};
-    cout << seogrid.getElement(indices)->getVn() << endl;
+    double beforeVn = seogrid.getElement(indices)->getVn();
+    seogrid.updateGridVn();
+    double afterVn = seogrid.getElement(indices)->getVn();
+    ASSERT_NE(beforeVn, afterVn);
+    // 指定した位置のパラメータを設定
+    cout << "Vn: " << beforeVn << endl;
+    cout << "Vd: " << seogrid.getElement(indices)->getVd() << endl;
+    cout << "Vn: " << seogrid.getElement(indices)->getVn() << endl;
     seogrid.updateGriddE();
-    cout << seogrid.getElement(indices)->getdE()["up"] << endl;
-    cout << seogrid.getElement(indices)->getQ() << endl;
+    cout << "dE[up]: " << seogrid.getElement(indices)->getdE()["up"] << endl;
+    cout << "Q: " << seogrid.getElement(indices)->getQ() << endl;
     seogrid.updateGridQn(0.1);
-    cout << seogrid.getElement(indices)->getQ() << endl;
+    cout << "Qn: " << seogrid.getElement(indices)->getQ() << endl;
+    seogrid.gridminwt(dt);
+    cout << "wt[up]: " << seogrid.getElement(indices)->getWT()["up"] << endl;
+
+    indices = {1, 1};
+    cout << "Vd: " << seogrid.getElement(indices)->getVd() << endl;
+    cout << "Vn: " << seogrid.getElement(indices)->getVn() << endl;
+    seogrid.updateGriddE();
+    cout << "dE[down]: " << seogrid.getElement(indices)->getdE()["down"] << endl;
+    cout << "Q: " << seogrid.getElement(indices)->getQ() << endl;
+    seogrid.updateGridQn(0.1);
+    cout << "Qn: " << seogrid.getElement(indices)->getQ() << endl;
+    seogrid.gridminwt(dt);
+    cout << "wt[down]: " << seogrid.getElement(indices)->getWT()["down"] << endl;
+    seogrid.getElement(indices)->setdE("down", 1);
+    seogrid.gridminwt(dt);
+    cout << "wt[down]: " << seogrid.getElement(indices)->getWT()["down"] << endl;
+    ASSERT_GT(seogrid.getElement(indices)->getWT()["down"], 0);
 }
 
 // dE

@@ -70,16 +70,12 @@ void SEO::setSurroundingVoltages()
 // 振動子のパラメータ計算
 void SEO::setPcalc()
 {
-    // V1,V2,・・・の合計値を計算
-    // double V_sum = reduce(V.begin(), V.end());
     Vn = Q / Cj + (C / (Cj * (legs * C + Cj))) * (Cj * V_sum - legs * Q);
 }
 
 // 振動子のエネルギー計算
 void SEO::setdEcalc()
 {
-    // V1,V2,・・・の合計値を計算
-    // double V_sum = reduce(V.begin(), V.end());
     dE["up"] = -e * (e - 2 * (Q + C * V_sum)) / (2 * (legs * C + Cj));
     dE["down"] = -e * (e + 2 * (Q + C * V_sum)) / (2 * (legs * C + Cj));
 }
@@ -90,25 +86,23 @@ void SEO::setNodeCharge(const double dt)
     Q += (Vd - Vn) * dt / R;
 }
 
-// トンネル待ち時間計算
-void SEO::calculateTunnelWt()
+// トンネル待ち時間計算(upまたはdownが正の時にwtを計算してtrueを返す)
+bool SEO::calculateTunnelWt()
 {
+    // 初期化
+    wt["up"] = 0;
+    wt["down"] = 0;
     if (dE["up"] > 0)
     {
         wt["up"] = (e * e * Rj / dE["up"]) * log(1 / Random());
-    }
-    else
-    {
-        wt["up"] = 0;
+        return true;
     }
     if (dE["down"] > 0)
     {
         wt["down"] = (e * e * Rj / dE["down"]) * log(1 / Random());
+        return true;
     }
-    else
-    {
-        wt["down"] = 0;
-    }
+    return false;
 }
 
 // 振動子のトンネル
@@ -157,6 +151,12 @@ map<string, double> SEO::getdE() const
 double SEO::getQ() const
 {
     return Q;
+}
+
+// wtの取得
+map<string, double> SEO::getWT() const
+{
+    return wt;
 }
 
 //-------- 汎用処理 -------------//
@@ -222,15 +222,4 @@ void SEO::setVn(double vn)
 void SEO::setQ(double qn)
 {
     Q = qn;
-}
-
-// テスト用wtゲッター
-double SEO::getWT(const string &direction) const
-{
-    auto it = wt.find(direction);
-    if (it != wt.end())
-    {
-        return it->second;
-    }
-    return 0.0;
 }

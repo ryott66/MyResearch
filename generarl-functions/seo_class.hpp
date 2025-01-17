@@ -60,8 +60,8 @@ public:
     // 電荷の更新
     void setNodeCharge(const double dt);
 
-    // トンネル待ち時間計算
-    void calculateTunnelWt();
+    // トンネル待ち時間計算(upまたはdownが正の時にwtを計算してtrueを返す)
+    bool calculateTunnelWt();
 
     // 振動子のトンネル
     void setTunnel(const string direction);
@@ -81,6 +81,9 @@ public:
 
     // Qの取得
     double getQ() const;
+
+    // wtの取得
+    map<string, double> getWT() const;
 
     //-------- 汎用処理 -------------//
     // 0から1の間の乱数を生成
@@ -116,10 +119,6 @@ public:
 
     // テスト用Qnセッター
     void setQ(double qn);
-
-    // テスト用wtゲッター
-    double getWT(const string& direction) const;
-    
 };
 
 #endif // SEO_HPP
