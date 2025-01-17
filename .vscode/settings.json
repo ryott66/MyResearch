@@ -16,7 +16,9 @@
         "ostream": "cpp",
         "vector": "cpp",
         "random": "cpp",
-        "memory": "cpp"
+        "memory": "cpp",
+        "fstream": "cpp",
+        "iosfwd": "cpp"
     },
     "editor.tokenColorCustomizations": {
         "textMateRules": [

@@ -70,16 +70,12 @@ void SEO::setSurroundingVoltages()
 // 振動子のパラメータ計算
 void SEO::setPcalc()
 {
-    // V1,V2,・・・の合計値を計算
-    // double V_sum = reduce(V.begin(), V.end());
     Vn = Q / Cj + (C / (Cj * (legs * C + Cj))) * (Cj * V_sum - legs * Q);
 }
 
 // 振動子のエネルギー計算
 void SEO::setdEcalc()
 {
-    // V1,V2,・・・の合計値を計算
-    // double V_sum = reduce(V.begin(), V.end());
     dE["up"] = -e * (e - 2 * (Q + C * V_sum)) / (2 * (legs * C + Cj));
     dE["down"] = -e * (e + 2 * (Q + C * V_sum)) / (2 * (legs * C + Cj));
 }
