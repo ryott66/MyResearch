@@ -18,7 +18,6 @@ SEO::SEO(double r, double rj, double cj, double c, double vd, int legscounts)
     dE["down"] = 0.0;
     wt["up"] = 0.0;
     wt["down"] = 0.0;
-    // cout << "SEO object created." << endl;
 }
 
 //-----------セッター------------//
