@@ -37,4 +37,6 @@ int main()
         }
     }
     Simulation<SEO> sim(dt, endtime);
+    sim.addGrid({seogrid});
+    sim.run();
 }
