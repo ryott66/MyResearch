@@ -20,13 +20,14 @@ private:
     string filename;              // 出力ファイル名
     vector<vector<Element>> data; // 二次元vectorに格納されたデータ
     ofstream outputFile;          // ファイルストリーム
+    Grid<Element> outputdata;     // 出力するGridインスタンス（２次元上で定義されたgrid）
 
     // 現在の日時を文字列として取得する関数
     string getCurrentTimeAsString();
 
 public:
     // コンストラクタ
-    PrintData(const string &baseFilename);
+    PrintData(const Grid<Element> &data, const string &baseFilename);
 
     // ファイルを開く
     void openFile();
@@ -38,7 +39,7 @@ public:
     void updateData(const vector<vector<Element>> &newData);
 
     // データをファイルに書き出す
-    // ほかの出力をしたい場合は関数を引数として渡すことによって行う
+    // ほかの出力をしたい場合は関数を引数として渡すことによって行う?
     void writeToFile2dim() const;
 };
 
@@ -60,7 +61,7 @@ string PrintData<Element>::getCurrentTimeAsString()
 
 // コンストラクタ
 template <typename Element>
-PrintData<Element>::PrintData(const string &baseFilename)
+PrintData<Element>::PrintData(const Grid<Element> &data, const string &baseFilename) : outputdata(data)
 {
     // ファイル名に現在の日時を追加
     filename = baseFilename + "_" + getCurrentTimeAsString() + ".txt";
