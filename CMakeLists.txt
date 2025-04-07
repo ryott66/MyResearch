@@ -1,10 +1,58 @@
-# cmake_minimum_required(VERSION 3.10)
-# project(MyOpenCVApp)
+cmake_minimum_required(VERSION 3.10)
+project(MyProject)
+set(CMAKE_CXX_STANDARD 17)
 
-# # OpenCVのパス（ここだけ自分の環境に合わせて）
-# set(OpenCV_DIR "C:/opencv/build")
+# OpenCV
+find_package(OpenCV REQUIRED)
+include_directories(${OpenCV_INCLUDE_DIRS})
 
-# find_package(OpenCV REQUIRED)
+# インクルードディレクトリを追加（oyl/utils.hpp を使うため）
+include_directories(${PROJECT_SOURCE_DIR}/include)
 
-# add_executable(MyOpenCVApp main.cpp)
-# target_link_libraries(MyOpenCVApp ${OpenCV_LIBS})
+# ライブラリ（src/**.cpp のビルド）
+add_library(oyl-utils src/utils.cpp)
+target_include_directories(oyl-utils PUBLIC ${PROJECT_SOURCE_DIR}/include)
+
+# main.cpp 実行ファイル
+add_executable(MainApp main.cpp)
+target_link_libraries(MainApp PRIVATE oyl-utils ${OpenCV_LIBS})
+
+# テストオプション
+option(BUILD_TESTING "Build unit tests" ON)
+if (BUILD_TESTING)
+    enable_testing()
+    find_package(GTest REQUIRED)
+    include_directories(${GTEST_INCLUDE_DIRS})
+
+    add_executable(UnitTests
+        test/test_utils.cpp
+    )
+
+    target_link_libraries(UnitTests
+        PRIVATE
+        GTest::GTest
+        GTest::Main
+        oyl-utils
+        ${OpenCV_LIBS}
+    )
+
+    add_test(NAME AllTests COMMAND UnitTests)
+endif()
+
+# add_library(oyl-utils
+#     src/utils.cpp
+#     src/math.cpp
+# )
+# target_include_directories(oyl-utils PUBLIC ${PROJECT_SOURCE_DIR}/include)
+# add_executable(UnitTests
+#     test/test_main.cpp
+#     test/test_utils.cpp
+#     test/test_math.cpp
+# )
+# target_link_libraries(UnitTests
+#     PRIVATE
+#     GTest::GTest
+#     GTest::Main
+#     oyl-utils
+#     ${OpenCV_LIBS}
+# )
