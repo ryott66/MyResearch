@@ -2,3 +2,8 @@
 *.exe
 *.txt
 .vscode/
+*build/
+# テスト作業用ディレクトリ
+*test/
+# CMakeListsだけは追跡するように設定
+!CMakeLists.txt
