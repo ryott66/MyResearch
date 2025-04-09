@@ -9,9 +9,8 @@
 #include <ctime>
 #include <sstream>
 
-#include<grid_class.hpp>
+#include<grid_2dim.hpp>
 
-using namespace std;
 
 template <typename Element>
 class Outputdata
