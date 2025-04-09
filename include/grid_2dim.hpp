@@ -1,188 +1,171 @@
-#ifndef GRID_CLASS_HPP
-#define GRID_CLASS_HPP
+#ifndef GRID_2DIM_HPP
+#define GRID_2DIM_HPP
 
-#include "seo_class.hpp"
+#include <vector>
+#include <memory>
+#include <stdexcept>
+#include <algorithm>
+#include <string>
 
-// テンプレートを利用しているためファイル分割は無し
+using namespace std;
+
 template <typename Element>
-
-class Grid
+class Grid2D
 {
-private:
-    vector<shared_ptr<Element>> grid; // フラット化されたグリッドデータ
-    shared_ptr<Element> tunnelplace;  // トンネルを発生させる素子
-    string tunneldirection;           // トンネルの方向
-    double minwt;                     // gridごとの最小の待ち時間
-    // 多次元インデックスを1次元インデックスに変換
-    int toFlatIndex(const vector<int> &indices) const;
-
 public:
-    // コンストラクタ（指定する型、サイズで動的配列を確保）
-    Grid(const vector<int> &dims);
+    Grid2D(int rows, int cols);
 
-    // indicesで指定した場所のオブジェクトを取得
-    shared_ptr<Element> getElement(const vector<int> &indices) const;
+    shared_ptr<Element> getElement(int row, int col) const;
+    void setElement(int row, int col, const shared_ptr<Element> &element);
 
-    // indicesで指定した場所のオブジェクトを更新
-    void setElement(const vector<int> &indices, const shared_ptr<Element> &element);
-
-    // Gridインスタンス全体のVnを計算して更新
     void updateGridVn();
-
-    // Gridインスタンス全体のdEを計算して更新
     void updateGriddE();
-
-    // Gridインスタンス全体のwtを計算して比較、minwtに代入
     bool gridminwt(const double dt);
-
-    // Gridインスタンス全体のノード電荷を計算して更新
     void updateGridQn(const double dt);
 
-    // フラット化されたデータの取得
-    vector<shared_ptr<Element>> &getFlatGrid() const;
+    vector<vector<shared_ptr<Element>>> &getGrid();
+    int numRows() const;
+    int numCols() const;
 
-    // グリッドサイズを取得
-    vector<int> getDimensions() const;
+    shared_ptr<Element> getTunnelPlace() const;
+    string getTunnelDirection() const;
+    double getMinWT() const;
+
+private:
+    vector<vector<shared_ptr<Element>>> grid;
+    int rows_, cols_;
+    shared_ptr<Element> tunnelplace;
+    string tunneldirection;
+    double minwt;
 };
 
-//-------------private----------------//
-
-// 多次元インデックスを1次元インデックスに変換
 template <typename Element>
-int Grid<Element>::toFlatIndex(const vector<int> &indices) const
+Grid2D<Element>::Grid2D(int rows, int cols)
+    : rows_(rows), cols_(cols), grid(rows, vector<shared_ptr<Element>>(cols))
 {
-    if (indices.size() != dimensions.size())
+    if (rows <= 0 || cols <= 0)
     {
-        throw invalid_argument("Invalid number of indices.");
+        throw invalid_argument("Grid size must be positive");
     }
-    int flatIndex = 0;
-    int multiplier = 1;
-    for (int i = dimensions.size() - 1; i >= 0; --i)
+    for (int i = 0; i < rows; ++i)
     {
-        if (indices[i] < 0 || indices[i] >= dimensions[i])
+        for (int j = 0; j < cols; ++j)
         {
-            throw out_of_range("Index out of bounds.");
+            grid[i][j] = make_shared<Element>();
         }
-        flatIndex += indices[i] * multiplier;
-        multiplier *= dimensions[i];
     }
-    return flatIndex;
 }
 
-//-------------public-----------------//
-
-// コンストラクタ（指定する型、サイズで動的配列を確保）
 template <typename Element>
-Grid<Element>::Grid(const vector<int> &dims) : dimensions(dims)
+shared_ptr<Element> Grid2D<Element>::getElement(int row, int col) const
 {
-    if (dims.empty())
+    return grid.at(row).at(col);
+}
+
+template <typename Element>
+void Grid2D<Element>::setElement(int row, int col, const shared_ptr<Element> &element)
+{
+    grid.at(row).at(col) = element;
+}
+
+template <typename Element>
+void Grid2D<Element>::updateGridVn()
+{
+    for (auto &row : grid)
     {
-        throw invalid_argument("Dimensions cannot be empty.");
-    }
-    int totalSize = 1;
-    for (int dim : dims)
-    {
-        if (dim <= 0)
+        for (auto &elem : row)
         {
-            throw invalid_argument("All dimensions must be greater than zero.");
+            elem->setSurroundingVoltages();
         }
-        totalSize *= dim;
     }
-    grid.resize(totalSize);
-    for (int i = 0; i < totalSize; i++)
+
+    for (auto &row : grid)
     {
-        grid.at(i) = make_shared<Element>();
+        for (auto &elem : row)
+        {
+            elem->setPcalc();
+        }
     }
 }
 
-// indicesで指定した場所の要素を取得
 template <typename Element>
-shared_ptr<Element> Grid<Element>::getElement(const vector<int> &indices) const
+void Grid2D<Element>::updateGriddE()
 {
-    return grid[toFlatIndex(indices)];
-}
-
-// indicesで指定した場所の要素を更新
-template <typename Element>
-void Grid<Element>::setElement(const vector<int> &indices, const shared_ptr<Element> &element)
-{
-    grid[toFlatIndex(indices)] = element;
-}
-
-// Gridインスタンス全体のVnを計算して更新
-template <typename Element>
-void Grid<Element>::updateGridVn()
-{
-    // 周囲の電圧を自動的に設定
-    for (auto &element : grid)
+    for (auto &row : grid)
     {
-        element->setSurroundingVoltages();
-    }
-    // ノード電圧の計算
-    for (auto &element : grid)
-    {
-        element->setPcalc();
+        for (auto &elem : row)
+        {
+            elem->setdEcalc();
+        }
     }
 }
 
-// Gridインスタンス全体のdEを計算して更新
 template <typename Element>
-void Grid<Element>::updateGriddE()
-{
-    // エネルギー変化dEを計算
-    for (auto &element : grid)
-    {
-        element->setdEcalc();
-    }
-}
-
-// Gridインスタンス全体のwtを計算して比較、minwtに代入
-template <typename Element>
-bool Grid<Element>::gridminwt(const double dt)
+bool Grid2D<Element>::gridminwt(const double dt)
 {
     minwt = dt;
-    // トンネル待ち時間wtを計算、比較
-    for (auto &element : grid)
+    for (auto &row : grid)
     {
-        // dEが正の場合はwtが計算されてtrueが返るため、if文が実行される
-        if (element->calculateTunnelWt())
+        for (auto &elem : row)
         {
-            // wtは計算される場合以外は0であるため、大きい方が計算された側(wtは常に正)
-            double tmpwt = max(element->getWT()["up"], element->getWT()["down"]);
-            if (tmpwt == element->getWT()["up"]) tunneldirection = "up";
-            else tunneldirection = "down";
-            tunnelplace = element;     // どの素子でトンネルが発生するか
-            minwt = min(minwt, tmpwt); // 最小を更新
+            if (elem->calculateTunnelWt())
+            {
+                double tmpwt = max(elem->getWT()["up"], elem->getWT()["down"]);
+                tunneldirection = (tmpwt == elem->getWT()["up"]) ? "up" : "down";
+                tunnelplace = elem;
+                minwt = min(minwt, tmpwt);
+            }
         }
     }
-    // 更新された場合はtrue
-    if (minwt < dt) return true;
-    return false;
+    return minwt < dt;
 }
 
-// Gridインスタンス全体のノード電荷を計算して更新
 template <typename Element>
-void Grid<Element>::updateGridQn(const double dt)
+void Grid2D<Element>::updateGridQn(const double dt)
 {
-    // ノード電荷Qを計算
-    for (auto &element : grid)
+    for (auto &row : grid)
     {
-        element->setNodeCharge(dt);
+        for (auto &elem : row)
+        {
+            elem->setNodeCharge(dt);
+        }
     }
 }
 
-// フラット化されたデータの取得
 template <typename Element>
-vector<shared_ptr<Element>> &Grid<Element>::getFlatGrid() const
+vector<vector<shared_ptr<Element>>> &Grid2D<Element>::getGrid()
 {
     return grid;
 }
 
-// グリッドサイズを取得
 template <typename Element>
-vector<int> Grid<Element>::getDimensions() const
+int Grid2D<Element>::numRows() const
 {
-    return dimensions;
+    return rows_;
 }
 
-#endif // GRID_CLASS_HPP
+template <typename Element>
+int Grid2D<Element>::numCols() const
+{
+    return cols_;
+}
+
+template <typename Element>
+shared_ptr<Element> Grid2D<Element>::getTunnelPlace() const
+{
+    return tunnelplace;
+}
+
+template <typename Element>
+string Grid2D<Element>::getTunnelDirection() const
+{
+    return tunneldirection;
+}
+
+template <typename Element>
+double Grid2D<Element>::getMinWT() const
+{
+    return minwt;
+}
+
+#endif // GRID_2DIM_HPP
