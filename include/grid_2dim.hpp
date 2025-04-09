@@ -13,7 +13,7 @@ class Grid2D
 {
 public:
     // コンストラクタ：指定した行数・列数でグリッドを初期化
-    Grid2D(int rows, int cols);
+    Grid2D(int rows, int cols, bool enableOutput = true); // ← outputするかどうかのbool。デフォルトをtrueにする
 
     // 指定位置の要素を取得
     std::shared_ptr<Element> getElement(int row, int col) const;
@@ -51,18 +51,23 @@ public:
     // 最小トンネル待ち時間wtを取得
     double getMinWT() const;
 
+    void enableOutput(bool flag);
+    bool isOutputEnabled() const;
+
 private:
     std::vector<std::vector<std::shared_ptr<Element>>> grid;
     int rows_, cols_;
     std::shared_ptr<Element> tunnelplace;
     std::string tunneldirection;
     double minwt;
+    bool outputEnabled = true;
 };
 
 // コンストラクタ：全要素をmake_sharedで初期化
 template <typename Element>
-Grid2D<Element>::Grid2D(int rows, int cols)
-    : rows_(rows), cols_(cols), grid(rows, std::vector<std::shared_ptr<Element>>(cols))
+Grid2D<Element>::Grid2D(int rows, int cols, bool enableOutput)
+    : rows_(rows), cols_(cols), grid(rows, std::vector<std::shared_ptr<Element>>(cols)),
+      outputEnabled(enableOutput)
 {
     if (rows <= 0 || cols <= 0)
     {
