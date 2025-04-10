@@ -10,12 +10,14 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 include_directories(${PROJECT_SOURCE_DIR}/include)
 
 # ライブラリ（src/**.cpp のビルド）
-add_library(oyl-utils src/utils.cpp)
+add_library(oyl-utils
+ src/seo_class.cpp
+)
 target_include_directories(oyl-utils PUBLIC ${PROJECT_SOURCE_DIR}/include)
 
 # main.cpp 実行ファイル
-add_executable(MainApp main.cpp)
-target_link_libraries(MainApp PRIVATE oyl-utils ${OpenCV_LIBS})
+# add_executable(MainApp main.cpp)
+# target_link_libraries(MainApp PRIVATE oyl-utils ${OpenCV_LIBS})
 
 # テストオプション
 option(BUILD_TESTING "Build unit tests" ON)
@@ -25,7 +27,8 @@ if (BUILD_TESTING)
     include_directories(${GTEST_INCLUDE_DIRS})
 
     add_executable(UnitTests
-        test/test_utils.cpp
+        test/test_seo_class.cpp
+        test/grid_2dim_seo_test.cpp
     )
 
     target_link_libraries(UnitTests
