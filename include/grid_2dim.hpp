@@ -11,6 +11,21 @@
 template <typename Element>
 class Grid2D
 {
+private:
+    // 2次元gridの定義
+    std::vector<std::vector<std::shared_ptr<Element>>> grid;
+    // 縦横のサイズ
+    int rows_, cols_;
+    // 出力時のファイル名(デフォルトは空)
+    std::string outputlabel = "";
+    // 電子トンネルをする場所
+    std::shared_ptr<Element> tunnelplace;
+    // 電子トンネルの向き
+    std::string tunneldirection;
+    // gridにおける最小の待ち時間
+    double minwt;
+    // 出力するかのbool値(デフォルトがtrueで出力する)
+    bool outputEnabled;
 public:
     // コンストラクタ：指定した行数・列数でグリッドを初期化
     Grid2D(int rows, int cols, bool enableOutput = true); // ← outputするかどうかのbool。デフォルトをtrueにする
@@ -51,16 +66,20 @@ public:
     // 最小トンネル待ち時間wtを取得
     double getMinWT() const;
 
-    void enableOutput(bool flag);
-    bool isOutputEnabled() const;
+    // outputlabelの設定
+    void setOutputLabel(const std::string& label);
 
-private:
-    std::vector<std::vector<std::shared_ptr<Element>>> grid;
-    int rows_, cols_;
-    std::shared_ptr<Element> tunnelplace;
-    std::string tunneldirection;
-    double minwt;
-    bool outputEnabled = true;
+    // outputlabelの取得
+    std::string getOutputLabel() const;
+
+    // outputlabelが設定されているかの取得
+    bool hasOutputLabel() const;
+
+    // OutputEnabledの設定
+    void setOutputEnabled(bool flag);
+
+    // OutputEnabledの取得
+    bool isOutputEnabled() const;
 };
 
 // コンストラクタ：全要素をmake_sharedで初期化
@@ -206,4 +225,39 @@ double Grid2D<Element>::getMinWT() const
     return minwt;
 }
 
+// outputlabelの設定
+template <typename Element>
+void Grid2D<Element>::setOutputLabel(const std::string& label)
+{
+    outputlabel = label;
+}
+
+
+// outputlabelの取得
+template <typename Element>
+std::string Grid2D<Element>::getOutputLabel() const
+{
+    return outputlabel.empty() ? "" : outputlabel;
+}
+
+// outputlabelが設定されているかの取得
+template <typename Element>
+bool Grid2D<Element>::hasOutputLabel() const
+{
+    return !outputlabel.empty();
+}
+
+// outputEnabledにbool値を設定
+template <typename Element>
+void Grid2D<Element>::setOutputEnabled(bool flag)
+{
+    outputEnabled = flag;
+}
+
+// OutputEnabledを取得
+template <typename Element>
+bool Grid2D<Element>::isOutputEnabled() const
+{
+    return outputEnabled;
+}
 #endif // GRID_2DIM_HPP

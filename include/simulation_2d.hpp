@@ -172,7 +172,7 @@ void Simulation2D<Element>::runStep()
     }
 
     t += steptime;
-    accumulatedTime += steptime;
+    // accumulatedTime += steptime;
 }
 
 // Gridインスタンスの配列を登録
