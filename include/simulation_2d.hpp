@@ -9,7 +9,7 @@
 #include <cmath>
 #include "seo_class.hpp"
 #include "grid_2dim.hpp"
-#include "printdata_class.hpp" // ←これも2D版に書き換えるなら適宜変更
+// #include "printdata_class.hpp" // ←これも2D版に書き換えるなら適宜変更
 
 template <typename Element>
 class Simulation2D
@@ -33,12 +33,16 @@ public:
     void openFiles() const;
     void closeFiles() const;
     void outputToFile(); // 累積時間に応じて出力
+    // oyl-video形式に合わせた出力を生成
     void outputTooyl();
 
     void runStep();             // 1ステップ実行
     void addGrid(const std::vector<Grid2D<Element>>& Gridinstance); // Grid追加
     void run();                 // 全体実行
-    std::vector<Grid2D<Element>>& getGrids(); // グリッド取得
+    // グリッド取得
+    std::vector<Grid2D<Element>>& getGrids();
+    // outputsを取得
+    const std::map<std::string, std::vector<std::vector<std::vector<std::vector<double>>>>>& getOutputs() const;
 };
 
 // コンストラクタ
@@ -106,16 +110,26 @@ void Simulation2D<Element>::outputToFile()
     // }
 }
 
+// oyl-video形式に合わせた出力を生成
 template <typename Element>
 void Simulation2D<Element>::outputTooyl()
 {
     if (t >= nextOutputTime)
     {
         size_t timeIndex = static_cast<size_t>(nextOutputTime / outputInterval);
+        int outputIndex = 0; // 出力順にindex付けするカウンタ
 
         for (const auto &grid : grids)
         {
             if (!grid.isOutputEnabled()) continue;
+
+            std::string label;
+            if (grid.hasOutputLabel()) {
+                label = grid.getOutputLabel();
+            } else {
+                label = "output" + std::to_string(outputIndex);
+                ++outputIndex;
+            }
 
             int rows = grid.numRows();
             int cols = grid.numCols();
@@ -129,13 +143,14 @@ void Simulation2D<Element>::outputTooyl()
                 }
             }
 
-            outputs["Vn"].resize(timeIndex + 1);
-            outputs["Vn"][timeIndex].push_back(vnGrid);
+            outputs[label].resize(timeIndex + 1);
+            outputs[label][timeIndex].push_back(vnGrid);
         }
 
-        nextOutputTime += outputInterval; // 次の出力時刻を更新
+        nextOutputTime += outputInterval;
     }
 }
+
 
 
 // シミュレーションの1ステップを実行
@@ -144,7 +159,7 @@ void Simulation2D<Element>::runStep()
 {
     double steptime = dt;
 
-    outputToFile();
+    outputTooyl();
 
     for (int i = 0; i < 5; i++)
     {
@@ -172,7 +187,6 @@ void Simulation2D<Element>::runStep()
     }
 
     t += steptime;
-    // accumulatedTime += steptime;
 }
 
 // Gridインスタンスの配列を登録
@@ -186,12 +200,12 @@ void Simulation2D<Element>::addGrid(const std::vector<Grid2D<Element>>& Gridinst
 template <typename Element>
 void Simulation2D<Element>::run()
 {
-    openFiles();
+    // openFiles();
     while (t < endtime)
     {
         runStep();
     }
-    closeFiles();
+    // closeFiles();
 }
 
 // グリッド取得
@@ -199,6 +213,12 @@ template <typename Element>
 std::vector<Grid2D<Element>>& Simulation2D<Element>::getGrids()
 {
     return grids;
+}
+
+template <typename Element>
+const std::map<std::string, std::vector<std::vector<std::vector<std::vector<double>>>>>&
+Simulation2D<Element>::getOutputs() const {
+    return outputs;
 }
 
 #endif // SIMULATION_2D_HPP

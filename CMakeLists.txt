@@ -29,6 +29,7 @@ if (BUILD_TESTING)
     add_executable(UnitTests
         test/test_seo_class.cpp
         test/grid_2dim_seo_test.cpp
+        test/test_simulation2d_output.cpp
     )
 
     target_link_libraries(UnitTests
@@ -41,21 +42,3 @@ if (BUILD_TESTING)
 
     add_test(NAME AllTests COMMAND UnitTests)
 endif()
-
-# add_library(oyl-utils
-#     src/utils.cpp
-#     src/math.cpp
-# )
-# target_include_directories(oyl-utils PUBLIC ${PROJECT_SOURCE_DIR}/include)
-# add_executable(UnitTests
-#     test/test_main.cpp
-#     test/test_utils.cpp
-#     test/test_math.cpp
-# )
-# target_link_libraries(UnitTests
-#     PRIVATE
-#     GTest::GTest
-#     GTest::Main
-#     oyl-utils
-#     ${OpenCV_LIBS}
-# )
