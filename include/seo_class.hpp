@@ -45,6 +45,9 @@ public:
     // バイアス電圧を設定
     void setVias(const double vd);
 
+    // V_sumを設定
+    void setVsum(double v);
+
     // 接続情報を設定
     void setConnections(const vector<shared_ptr<SEO>> &connectedSEOs);
 

@@ -38,6 +38,12 @@ void SEO::setVias(const double vd)
     Vd = vd;
 }
 
+// V_sumを設定
+void SEO::setVsum(double v)
+{
+    V_sum = v;
+}
+
 // 接続情報を設定
 void SEO::setConnections(const vector<shared_ptr<SEO>> &connectedSEOs)
 {

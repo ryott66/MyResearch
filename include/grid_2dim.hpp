@@ -36,7 +36,10 @@ public:
     // 指定位置の要素を設定
     void setElement(int row, int col, const std::shared_ptr<Element> &element);
 
-    // グリッド全体のノード電圧Vnを更新
+    // グリッド全体の接続されている電圧を更新
+    void updateGridSurVn();
+
+    // グリッド全体のノード電圧Vnを計算・更新
     void updateGridVn();
 
     // グリッド全体のエネルギー変化dEを計算・更新
@@ -115,9 +118,9 @@ void Grid2D<Element>::setElement(int row, int col, const std::shared_ptr<Element
     grid.at(row).at(col) = element;
 }
 
-// グリッド全体のノード電圧Vnを計算・更新
+// グリッド全体の接続されている電圧を更新
 template <typename Element>
-void Grid2D<Element>::updateGridVn()
+void Grid2D<Element>::updateGridSurVn()
 {
     for (auto &row : grid)
     {
@@ -126,7 +129,12 @@ void Grid2D<Element>::updateGridVn()
             elem->setSurroundingVoltages();
         }
     }
+}
 
+// グリッド全体のノード電圧Vnを計算・更新
+template <typename Element>
+void Grid2D<Element>::updateGridVn()
+{
     for (auto &row : grid)
     {
         for (auto &elem : row)

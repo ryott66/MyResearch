@@ -2,7 +2,7 @@
 #include "seo_class.hpp"
 #include "grid_2dim.hpp"
 #include "simulation_2d.hpp"
-#include "oyl_video.hpp" // oyl::VideoClass, normalizeto255
+#include "oyl_video.hpp"
 
 constexpr int size_x = 32;
 constexpr int size_y = 32;
@@ -30,20 +30,20 @@ int main()
             auto seo = grid.getElement(y, x);
             double biasVd = ((x + y) % 2 == 0) ? Vd : -Vd;
             seo->setUp(R, Rj, Cj, C, biasVd, 4);
-
             std::vector<std::shared_ptr<SEO>> connections;
             if (y > 0) connections.push_back(grid.getElement(y - 1, x));     // 上
             if (x < size_x - 1) connections.push_back(grid.getElement(y, x + 1)); // 右
             if (y < size_y - 1) connections.push_back(grid.getElement(y + 1, x)); // 下
             if (x > 0) connections.push_back(grid.getElement(y, x - 1));     // 左
-
             seo->setConnections(connections);
         }
     }
-
     Sim sim(dt, endtime);
     sim.addGrid({grid});
+    // 時刻150ns〜150.1nsの間、(1,1)の素子に0.006Vを加える
+    sim.addVoltageTrigger(150, &grid, 1, 1, 0.06);
     sim.run();
+
 
     // 出力処理
     const auto& outputs = sim.getOutputs();
@@ -51,9 +51,11 @@ int main()
     {
         const auto& data = outputs.at("seo");
         auto normalized = oyl::normalizeto255(data);
+        std::string label = grid.getOutputLabel();
+        std::string filepath = "output/" + label + ".mp4";
 
         oyl::VideoClass video(normalized);
-        video.set_filename("seo_simulation.mp4");
+        video.set_filename(filepath);
         video.set_codec(cv::VideoWriter::fourcc('m', 'p', '4', 'v')); // mp4対応コーデック
         video.set_fps(30.0);
         // video.set_scaleBar(1).set_cellsize(20);
