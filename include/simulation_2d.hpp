@@ -21,8 +21,11 @@ private:
     double outputInterval;     // 出力間隔（例: 0.1）
     double nextOutputTime;     // 次に出力すべき時刻（0.1, 0.2, ...）
     std::vector<Grid2D<Element>> grids;                 // Grid2Dのインスタンス配列
-    // std::vector<PrintData<Element>> printdatavector;    // 出力データ
-    std::map<std::string, std::vector<std::vector<std::vector<std::vector<double>>>>> outputs; // oyl-video用データ形式
+    // oyl-video形式のデータ
+    std::map<
+        std::string,           // ラベル名
+        std::vector<std::vector<std::vector<double>>> // [timeframe][y][x]
+    > outputs;
 
 public:
     Simulation2D(double dT, double EndTime);
@@ -42,13 +45,13 @@ public:
     // グリッド取得
     std::vector<Grid2D<Element>>& getGrids();
     // outputsを取得
-    const std::map<std::string, std::vector<std::vector<std::vector<std::vector<double>>>>>& getOutputs() const;
+    const std::map<std::string, std::vector<std::vector<std::vector<double>>>>& getOutputs() const;
 };
 
 // コンストラクタ
 template <typename Element>
 Simulation2D<Element>::Simulation2D(double dT, double EndTime)
-    : t(0.0), dt(dT), endtime(EndTime), outputInterval(0.1), nextOutputTime(0.1) {}
+    : t(0.0), dt(dT), endtime(EndTime), outputInterval(dT), nextOutputTime(0.0) {}
 
 // 最小wtを探索する
 template <typename Element>
@@ -111,12 +114,14 @@ void Simulation2D<Element>::outputToFile()
 }
 
 // oyl-video形式に合わせた出力を生成
+// 1 <= x <= max-1, 1 <= y <= max-1の範囲で出力される(sizex=32,sizey=32の場合は1から31までの範囲で30×30になる)
 template <typename Element>
 void Simulation2D<Element>::outputTooyl()
 {
     if (t >= nextOutputTime)
     {
-        size_t timeIndex = static_cast<size_t>(nextOutputTime / outputInterval);
+        // 出力形式に合わせて整数値にならす
+        int timeframe = static_cast<int>(std::round(nextOutputTime / outputInterval));
         int outputIndex = 0; // 出力順にindex付けするカウンタ
 
         for (const auto &grid : grids)
@@ -133,16 +138,7 @@ void Simulation2D<Element>::outputTooyl()
 
             int rows = grid.numRows();
             int cols = grid.numCols();
-
-            // std::vector<std::vector<double>> vnGrid(rows, std::vector<double>(cols));
-            // for (int i = 0; i < rows; ++i)
-            // {
-            //     for (int j = 0; j < cols; ++j)
-            //     {
-            //         vnGrid[i][j] = grid.getElement(i, j)->getVn();
-            //     }
-            // }
-            // ★ 端を除いた範囲のみに変更
+            
             std::vector<std::vector<double>> vnGrid(rows - 2, std::vector<double>(cols - 2));
             for (int i = 1; i < rows - 1; ++i)
             {
@@ -152,10 +148,9 @@ void Simulation2D<Element>::outputTooyl()
                 }
             }
 
-            outputs[label].resize(timeIndex + 1);
-            outputs[label][timeIndex].push_back(vnGrid);
+            outputs[label].resize(timeframe + 1);
+            outputs[label][timeframe] = vnGrid;         
         }
-
         nextOutputTime += outputInterval;
     }
 }
@@ -225,7 +220,7 @@ std::vector<Grid2D<Element>>& Simulation2D<Element>::getGrids()
 }
 
 template <typename Element>
-const std::map<std::string, std::vector<std::vector<std::vector<std::vector<double>>>>>&
+const std::map<std::string, std::vector<std::vector<std::vector<double>>>>&
 Simulation2D<Element>::getOutputs() const {
     return outputs;
 }

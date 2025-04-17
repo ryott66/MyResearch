@@ -6,7 +6,8 @@
 #include <vector>
 
 namespace oyl {
-    std::vector<std::vector<std::vector<int>>> normalizeto255(std::vector<std::vector<std::vector<double>>> video_data_double);
+    // 参照で渡せるように修正
+    std::vector<std::vector<std::vector<int>>> normalizeto255(const std::vector<std::vector<std::vector<double>>>& video_data_double);
 
     void basic_makevideo_int(std::vector<std::vector<std::vector<int>>> basic_video_data_int);
     void basic_makevideo_double(std::vector<std::vector<std::vector<double>>> basic_video_data_double);

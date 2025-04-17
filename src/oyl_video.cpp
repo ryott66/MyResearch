@@ -11,7 +11,8 @@
 
 namespace oyl {
 #pragma region normalizeto255
-    std::vector<std::vector<std::vector<int>>> normalizeto255(std::vector<std::vector<std::vector<double>>> video_data_double){
+    // 参照で渡せるように修正
+    std::vector<std::vector<std::vector<int>>> normalizeto255(const std::vector<std::vector<std::vector<double>>>& video_data_double){
         int t_frame = video_data_double.size();
         int x_width = video_data_double[0].size();
         int y_height = video_data_double[0][0].size();

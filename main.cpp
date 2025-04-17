@@ -1,58 +1,67 @@
-// main.cpp
 #include <iostream>
 #include "seo_class.hpp"
 #include "grid_2dim.hpp"
 #include "simulation_2d.hpp"
-#include "oyl_video.hpp"
+#include "oyl_video.hpp" // oyl::VideoClass, normalizeto255
+
+constexpr int size_x = 32;
+constexpr int size_y = 32;
+constexpr double Vd = 0.0044;
+constexpr double R = 0.5;
+constexpr double Rj = 0.002;
+constexpr double Cj = 10.0;
+constexpr double C = 2.0;
+constexpr double dt = 0.1;
+constexpr double endtime = 200;
+
+using Sim = Simulation2D<SEO>;
+using Grid = Grid2D<SEO>;
 
 int main()
 {
-    using Sim = Simulation2D<SEO>;
-    using Grid = Grid2D<SEO>;
-
-    // シミュレーションパラメータ
-    double dt = 0.1;
-    double endtime = 200;
-
-    // Grid作成（30x30、出力あり）
-    Grid grid(30, 30, true);
+    Grid grid(size_y, size_x, true);
     grid.setOutputLabel("seo");
 
-    // SEOの初期設定（例として全ての素子に同一パラメータを設定）
-    for (int i = 0; i < grid.numRows(); ++i)
+    // SEO初期化と接続
+    for (int y = 0; y < size_y; ++y)
     {
-        for (int j = 0; j < grid.numCols(); ++j)
+        for (int x = 0; x < size_x; ++x)
         {
-            auto seo = grid.getElement(i, j);
-            seo->setUp(1.0, 0.001, 1.0, 1.0, 2.0, 4); // R, Rj, Cj, C, Vd, legs
+            auto seo = grid.getElement(y, x);
+            double biasVd = ((x + y) % 2 == 0) ? Vd : -Vd;
+            seo->setUp(R, Rj, Cj, C, biasVd, 4);
+
+            std::vector<std::shared_ptr<SEO>> connections;
+            if (y > 0) connections.push_back(grid.getElement(y - 1, x));     // 上
+            if (x < size_x - 1) connections.push_back(grid.getElement(y, x + 1)); // 右
+            if (y < size_y - 1) connections.push_back(grid.getElement(y + 1, x)); // 下
+            if (x > 0) connections.push_back(grid.getElement(y, x - 1));     // 左
+
+            seo->setConnections(connections);
         }
     }
 
-    // シミュレーション初期化・Grid登録
     Sim sim(dt, endtime);
     sim.addGrid({grid});
-
-    // 実行
     sim.run();
 
-    // 出力取得・正規化・動画化
+    // 出力処理
     const auto& outputs = sim.getOutputs();
     if (outputs.count("seo"))
     {
-        const auto& video_data_double = outputs.at("seo");
-        auto normalized = oyl::normalizeto255(video_data_double); // 0〜255のintに変換
+        const auto& data = outputs.at("seo");
+        auto normalized = oyl::normalizeto255(data);
 
         oyl::VideoClass video(normalized);
         video.set_filename("seo_simulation.mp4");
-        video.set_codec(cv::VideoWriter::fourcc('a', 'v', 'c', '1')); // mp4用
-        video.set_fps(60.0);
-        video.set_scaleBar(1);
-        video.set_cellsize(20);
+        video.set_codec(cv::VideoWriter::fourcc('m', 'p', '4', 'v')); // mp4対応コーデック
+        video.set_fps(30.0);
+        // video.set_scaleBar(1).set_cellsize(20);
         video.makevideo();
     }
     else
     {
-        std::cerr << "出力ラベル 'seo' が見つかりませんでした。" << std::endl;
+        std::cerr << "[ERROR] No output data found for label 'seo'" << std::endl;
     }
 
     return 0;

@@ -12,12 +12,13 @@ include_directories(${PROJECT_SOURCE_DIR}/include)
 # ライブラリ（src/**.cpp のビルド）
 add_library(oyl-utils
  src/seo_class.cpp
+ src/oyl_video.cpp
 )
 target_include_directories(oyl-utils PUBLIC ${PROJECT_SOURCE_DIR}/include)
 
 # main.cpp 実行ファイル
-# add_executable(MainApp main.cpp)
-# target_link_libraries(MainApp PRIVATE oyl-utils ${OpenCV_LIBS})
+add_executable(MainApp main.cpp)
+target_link_libraries(MainApp PRIVATE oyl-utils ${OpenCV_LIBS})
 
 # テストオプション
 option(BUILD_TESTING "Build unit tests" ON)
