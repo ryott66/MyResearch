@@ -134,12 +134,21 @@ void Simulation2D<Element>::outputTooyl()
             int rows = grid.numRows();
             int cols = grid.numCols();
 
-            std::vector<std::vector<double>> vnGrid(rows, std::vector<double>(cols));
-            for (int i = 0; i < rows; ++i)
+            // std::vector<std::vector<double>> vnGrid(rows, std::vector<double>(cols));
+            // for (int i = 0; i < rows; ++i)
+            // {
+            //     for (int j = 0; j < cols; ++j)
+            //     {
+            //         vnGrid[i][j] = grid.getElement(i, j)->getVn();
+            //     }
+            // }
+            // ★ 端を除いた範囲のみに変更
+            std::vector<std::vector<double>> vnGrid(rows - 2, std::vector<double>(cols - 2));
+            for (int i = 1; i < rows - 1; ++i)
             {
-                for (int j = 0; j < cols; ++j)
+                for (int j = 1; j < cols - 1; ++j)
                 {
-                    vnGrid[i][j] = grid.getElement(i, j)->getVn();
+                    vnGrid[i - 1][j - 1] = grid.getElement(i, j)->getVn();
                 }
             }
 

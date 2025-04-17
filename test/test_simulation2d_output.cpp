@@ -60,7 +60,7 @@ TEST(Simulation2DTest, HandleTunnelsModifiesCharge) {
 
 TEST(Simulation2DTest, RunStepIncrementsTime) {
     Sim sim(0.01, 1.0);
-    Grid2D<SEO> grid(1, 1);
+    Grid2D<SEO> grid(3, 3);
     sim.addGrid({grid});
     sim.runStep(); // t += dt
     for (int i = 0; i < 19; ++i) sim.runStep();
@@ -69,7 +69,7 @@ TEST(Simulation2DTest, RunStepIncrementsTime) {
 
 TEST(Simulation2DTest, RunTerminatesAtEndtime) {
     Sim sim(0.01, 0.3); // 時間を伸ばすと出力が増える
-    Grid2D<SEO> grid(1, 1);
+    Grid2D<SEO> grid(3, 3);
     grid.setOutputLabel("test");
     sim.addGrid({grid});
     sim.run(); // 完走する
