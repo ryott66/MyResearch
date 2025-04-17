@@ -3,6 +3,3 @@
 *.txt
 # CMakeListsだけは追跡するように設定
 !CMakeLists.txt
-# exampleファイルを無視
-example_2dim.cpp
-example_main.cpp
