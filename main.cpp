@@ -32,9 +32,9 @@ int main()
     {
         for (int x = 0; x < size_x; ++x)
         {
-            auto seo = std::make_shared<SEO>();
+            auto seo = std::make_shared<SEO>();  //SEOクラスのshared_ptr
             double biasVd = ((x + y) % 2 == 0) ? Vd : -Vd;
-            seo->setUp(R, Rj, Cj, C, biasVd, 4);
+            seo->setUp(R, Rj, Cj, C, biasVd, 4); //ptrだから->でsetUpというメンバ関数にアクセス
             grid.setElement(y, x, seo);
         }
     }

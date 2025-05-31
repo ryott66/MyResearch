@@ -10,7 +10,7 @@
 #include "base_element.hpp"
 
 // 2次元グリッドで任意の素子（Element）を管理するテンプレートクラス
-template <typename Element>
+template <typename Element>  // Grid2dはElementに依存するクラスなので、template型で定義
 class Grid2D
 {
 private:
@@ -33,7 +33,7 @@ public:
     Grid2D(int rows, int cols, bool enableOutput = true); // ← outputするかどうかのbool。デフォルトをtrueにする
 
     // 指定位置の要素を取得
-    std::shared_ptr<Element> getElement(int row, int col) const;
+    std::shared_ptr<Element> getElement(int row, int col) const;  //constはrowとcolを変更しないという宣言 読み込みはOK
 
     // 指定位置の要素を設定
     void setElement(int row, int col, const std::shared_ptr<Element> &element);
