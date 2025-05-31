@@ -8,19 +8,31 @@
 #include "grid_2dim.hpp"
 #include "simulation_2d.hpp"
 #include "oyl_video.hpp"
+#include "tsp_methods.hpp"
 
-constexpr int size_x = 32;
-constexpr int size_y = 32;
+
+
+constexpr int WideLane = 5;
+constexpr int NarrowLane = 1;
+constexpr int CenterLane = (WideLane + 1) / 2;
+
+constexpr int size_x = 60;
+constexpr int size_y = (WideLane + 1) * N2;
+
 constexpr double Vd = 0.0044;
-constexpr double R = 0.5;
+constexpr double VibVd = 0.009;
+constexpr double R = 0.07;
 constexpr double Rj = 0.002;
 constexpr double Cj = 10.0;
 constexpr double C = 2.0;
 constexpr double dt = 0.1;
-constexpr double endtime = 200;
+constexpr double endtime = 1;
+
+
 
 using Grid = Grid2D<BaseElement>;
 using Sim = Simulation2D<BaseElement>;
+
 
 int main()
 {
@@ -28,12 +40,19 @@ int main()
     grid.setOutputLabel("seo");
 
     // SEO素子の生成と配置
+    double biasVd = 0;
     for (int y = 0; y < size_y; ++y)
     {
         for (int x = 0; x < size_x; ++x)
         {
             auto seo = std::make_shared<SEO>();  //SEOクラスのshared_ptr
-            double biasVd = ((x + y) % 2 == 0) ? Vd : -Vd;
+            if (((y % (WideLane + 1)) == 0) or (x == 0) ){
+                biasVd = 0;
+            }else if (x == 1){
+                biasVd = ((x + y) % 2 == 0) ? VibVd : -VibVd;
+            }else{
+                biasVd = ((x + y) % 2 == 0) ? Vd : -Vd;
+            }
             seo->setUp(R, Rj, Cj, C, biasVd, 4); //ptrだから->でsetUpというメンバ関数にアクセス
             grid.setElement(y, x, seo);
         }
@@ -45,19 +64,38 @@ int main()
         for (int x = 0; x < size_x; ++x)
         {
             auto center = grid.getElement(y, x);
-            std::vector<std::shared_ptr<BaseElement>> neighbors;
+            std::vector<std::shared_ptr<BaseElement>> neighbors;  //隣接振動子の配列
             if (y > 0) neighbors.push_back(grid.getElement(y - 1, x));
             if (x < size_x - 1) neighbors.push_back(grid.getElement(y, x + 1));
             if (y < size_y - 1) neighbors.push_back(grid.getElement(y + 1, x));
             if (x > 0) neighbors.push_back(grid.getElement(y, x - 1));
-            center->setConnections(neighbors);
+            center->setConnections(neighbors);  //neighborsがコネクションとして正しいか決める？
         }
     }
 
+    // コストから結合係数表作成
+    int ctarrayroop = 0;
+    std::vector<std::vector<double>> costarray(N, std::vector<double>(N,0)); //N*N int vectror all 0
+    for (int i = 0; i < N; i++) {
+        for (int j = i + 1; j < N; j++) {
+            costarray[i][j] = Cost[ctarrayroop];
+            ctarrayroop++;
+        }
+    }
+    std::vector<std::vector<Weight>> Wei_Arr(N2, std::vector<Weight>(4 * (N - 1)));
+    calcweight(Wei_Arr, costarray);
+
+    for (const std::vector<Weight>& row : Wei_Arr) {
+        for (Weight val : row) {
+            std::cout << val.weight << " ";
+        }
+        std::cout << std::endl;
+    }
     // シミュレーション初期化
     Sim sim(dt, endtime);
     sim.addGrid({grid});
 
+    /* 
     // 特定素子の出力設定
     auto ofs = std::make_shared<std::ofstream>("../output/multivn.txt");
     std::vector<std::shared_ptr<BaseElement>> targets = {
@@ -68,9 +106,10 @@ int main()
     sim.addSelectedElements(ofs, targets);
     std::vector<std::string> labels = {"1515", "1615", "1715"};
     sim.generateGnuplotScript("../output/multivn.txt", labels);
+    */
 
     // トリガ設定
-    sim.addVoltageTrigger(100, &grid, 15, 15, 0.006);
+    // sim.addVoltageTrigger(100, &grid, 15, 15, 0.006);
     sim.run();
 
     // 動画出力
