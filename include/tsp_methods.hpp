@@ -2,10 +2,11 @@
 #define TSP_METHODS_HPP
 
 #include <array>
+#include <string>
 
 constexpr int N = 5;
 constexpr int N2 = N * N;
-constexpr std::array<double, 10> Cost = {30,25,40,45,50,40,50,35,20,40};
+constexpr std::array<double, 10> Cost = {30,30,80,80,80,30,80,10,30,30};
 /*	4都市(6)	ver1{5,35,65,65,35,25}
 	5都市(10)　	ver1{30,25,40,45,50,40,50,35,20,40}
   			ver2{30,30,80,80,80,30,80,10,30,30}
@@ -14,13 +15,21 @@ constexpr std::array<double, 10> Cost = {30,25,40,45,50,40,50,35,20,40};
 			ver2{43,79,90,85,9,43,39,24,45,35,58,28,67,42,78,7,44,79,33,2,30,81,71,37,42,65,34,94,25,93,15,23,39,58,100,41,44,11,31,10,39,24,92,58,96}
 	12都市(66)　ver1{1,42,64,1,92,47,44,29,92,60,44,73,100,37,95,54,6,55,32,62,17,67,19,19,73,80,29,22,1,18,34,33,73,9,5,23,55,2,6,23,76,97,28,56,87,32,41,42,48,13,23,23,81,54,10,51,89,48,51,55,48,18,1,99,52,10}
 */
+
+template <int N>
+constexpr std::array<std::string, N> getNameArray();
+
+template <int N>
+const auto NAME = getNameArray<N>();
+
+
 constexpr double Ini_X = 0.55;
 constexpr double Nu = 0.005;
 constexpr double Lambda = 0.5;
 constexpr double Myu = 0.5;
 
 constexpr double calcL_time = 1.0; //ns
-
+constexpr double reset_time = calcL_time * N * 70;  //都市数×100回、calcLを行ったらリセット判定
 constexpr int WideLane = 5;
 constexpr int NarrowLane = 1;
 constexpr int CenterLane = (WideLane + 1) / 2;
@@ -37,7 +46,8 @@ constexpr double Rj = 0.002;
 constexpr double Cj = 10.0;
 constexpr double C = 2.0;
 constexpr double dt = 0.1;
-constexpr double endtime = 100;
+constexpr double endtime = 1000;
+
 
 
 //関数宣言（中身は最後）
@@ -55,7 +65,6 @@ class Calculate_NN
 private:
     double t;
     std::vector<std::vector<Weight>> W;
-    std::vector<double> Xvk;
     std::vector<double> dX;
 
 
@@ -64,9 +73,16 @@ public:
     //コンストラクタ
     template <std::size_t SIZE>
     Calculate_NN(const std::array<double, SIZE>& Cost);
+
+    //public変数
+    std::vector<std::vector<double>> costarray;  //結果出力時の経路コスト算出時に必要だからpublic変数
     std::vector<double> Lvk;
+    std::vector<double> Xvk;
+    std::vector<int> Loffcity;
     std::vector<int> Nvk;
     std::vector<int> Ctvk;
+
+    //メソッド
     template <std::size_t SIZE>
     void calcweight(const std::array<double, SIZE>& Cost);
     void calcL();
@@ -78,20 +94,25 @@ public:
 //コンストラクタ
 template <std::size_t SIZE>
 Calculate_NN::Calculate_NN(const std::array<double, SIZE>& Cost)
-    : Lvk(N2, 0.0), Xvk(N2, Ini_X), dX(N2, 0.0), Nvk(N2, 0), Ctvk(N2, 0)
-     {
-    // Wを N2 行 × 最大4(N-1)列で初期化（Weight構造体の2次元ベクトル）
-    W.resize(N2, std::vector<Weight>(4 * (N - 1)));
-    // メンバ関数
-    calcweight(Cost);
-}
+    : costarray(N, std::vector<double>(N, 0.0)),
+      Lvk(N2, 0.0),
+      Xvk(N2, Ini_X),
+      Loffcity(N,0),
+      dX(N2, 0.0),
+      Nvk(N2, 0),
+      Ctvk(N2, 0)
+    {
+        // Wを N2 行 × 最大4(N-1)列で初期化（Weight構造体の2次元ベクトル）
+        W.resize(N2, std::vector<Weight>(4 * (N - 1)));
+        // メンバ関数
+        calcweight(Cost);
+    }
 
 
 template <std::size_t SIZE>
 void Calculate_NN::calcweight(const std::array<double, SIZE>& Cost){
     // コストからコスト表作成
     int ctarrayroop = 0;
-    std::vector<std::vector<double>> costarray(N, std::vector<double>(N,0)); //N*N int vectror all 0
     for (int i = 0; i < N; i++) {
         for (int j = i + 1; j < N; j++) {
             costarray[i][j] = Cost[ctarrayroop];
@@ -138,27 +159,31 @@ void Calculate_NN::calcweight(const std::array<double, SIZE>& Cost){
         }
     }
 
+    /* 結合係数デバッグ
     for (const auto& row : W) {
         for (auto val : row) {
             std::cout << val.weight << " ";
         }
         std::cout << std::endl;
     }
+    */
+
 }
 
 
 void Calculate_NN::calcL(){ //Lの計算、それに伴うXの更新等
+    /*デバッグ用
     std::cout << "calcL" << std::endl;
     for (double L : Lvk){
         std::cout << L << ", ";
     }
+    */
     double dt1 = 0;
     double dt2 = 0;
     double sum = 0;
     double Outdt = 0;
     double sumO = 0;    //  全レーンのOutの合計
     double Indt = 0;
-    std::vector<int> Loffcity(N,0);
     int Loff = 0;
 
 
@@ -185,7 +210,7 @@ void Calculate_NN::calcL(){ //Lの計算、それに伴うXの更新等
     for(int name = 0; name < N; name++){
         for(int num = 0; num < N; num++){
             if(Lvk[name * N + num] < 0.5){
-                Loffcity[name]++;
+                // Loffcity[name]++;
                 Loff++;
             }
         }
@@ -224,19 +249,38 @@ std::vector<int> Calculate_NN::getCt(){
     return Ctvk;
 }
 
+// constexprのNにより分類
+template <int N>
+constexpr std::array<std::string, N> getNameArray() {
+    if constexpr (N == 4) {
+        return {"A", "B", "C", "D"};
+    } else if constexpr (N == 5) {
+        return {"A", "B", "C", "D", "E"};
+    } else if constexpr (N == 6) {
+        return {"A", "B", "C", "D", "E", "F"};
+    } else if constexpr (N == 10){
+        return {"A", "B", "C", "D", "E", "F", "G", "H", "I", "J"};
+    }  else if constexpr (N == 12){
+        return {"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"};
+    }  else if constexpr (N == 15){
+        return {"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O"};
+    } else {
+        static_assert(N == -1, "Unsupported N in getNameArray");
+    }
+}
 
+
+//シグモイド関数（CalcL内）
 double sigmoid(int gamma, double theta, double value){
     double ex = exp(-gamma * (value - theta));
     double h=1/(1 + ex);
     return h;
 }
 
-//指定の範囲の乱数を生成する関数
+//指定の範囲の乱数を生成
 double rnd_generate(double min, double max){
     double t = (double)rand() / RAND_MAX;
     return min + (max - min)*t;
 }
-
-
 
 #endif

@@ -13,6 +13,7 @@
 #include "tsp_methods.hpp"
 
 #include <iostream>
+#include <iomanip>
 #include <string>
 #include <algorithm>
 
@@ -22,7 +23,8 @@ class Simulation2D
 private:
     double t;                           // 現在の時間（不定期に増える）
     double dt;                          // 基本刻み（参考値）
-    double xt;                          // 計算calcLを行う時間の管理
+    double cLt;                          // 計算calcLを行う時間の管理
+    double rt;                           // リセットの時間の管理
     double endtime;                     // 終了時刻
     double outputInterval;              // 出力間隔（例: 0.1）
     double nextOutputTime;              // 次に出力すべき時刻（0.1, 0.2, ...）
@@ -88,8 +90,11 @@ public:
     // トリガを適用させる
     void applyVoltageTriggers();
 
-    //Vdの変更
+    //経路幅調整ようのVdの変更
     void applychangeVd();
+
+    //解候補の数によりリセット
+    void resetfunction();
 
     // ファイル出力する素子とファイルを格納するベクトルに追加する
     void addSelectedElements(std::shared_ptr<std::ofstream> ofs, const std::vector<std::shared_ptr<Element>>& elems);
@@ -112,7 +117,7 @@ public:
 // コンストラクタ
 template <typename Element>
 Simulation2D<Element>::Simulation2D(double dT, double EndTime)
-    : t(0.0), dt(dT), xt(0.0), endtime(EndTime), outputInterval(dT), nextOutputTime(0.0), CalcNN(Cost) {}
+    : t(0.0), dt(dT), cLt(0.0), rt(0.0), endtime(EndTime), outputInterval(dT), nextOutputTime(0.0), CalcNN(Cost) {}
 
 // 最小wtをもつgridを探索する（最小wtがdtより小さいかどうかのbool, 最小のwtを持つgrid）
 template <typename Element>
@@ -347,7 +352,8 @@ void Simulation2D<Element>::runStep()
 
     // tの増加
     t += steptime;
-    xt += steptime;
+    cLt += steptime;
+    rt += steptime;
 }
 
 // Gridインスタンスの配列を登録
@@ -361,14 +367,16 @@ void Simulation2D<Element>::addGrid(const std::vector<Grid2D<Element>> &Gridinst
 template <typename Element>
 void Simulation2D<Element>::run()
 {
-
     while (t < endtime)
     {
-        if (calcL_time < xt){  //calcL_time毎にcalcLを行う
+        if (calcL_time < cLt){  //calcL_time毎にcalcLを行う
             CalcNN.calcL();
             applychangeVd();
-
-            xt = 0;
+            if (reset_time < rt){
+                resetfunction();
+                rt = 0;
+            }
+            cLt = 0;
         }
 
         runStep();
@@ -376,14 +384,15 @@ void Simulation2D<Element>::run()
     }
 }
 
-
-// 到達回数表示
+/*
+// デバッグ用 到達回数表示
 template <typename Element>
 void Simulation2D<Element>::printCt() {
     for (int ct : CalcNN.Ctvk) {
         std::cout << ct << "ct " << std::endl;
     }
 }
+*/
 
 // グリッド取得
 template <typename Element>
@@ -469,6 +478,36 @@ void Simulation2D<Element>::applychangeVd(){
     }
 }
 
+template <typename Element>
+void Simulation2D<Element>::resetfunction(){
+    for(int i = 0; i < N; i++){
+        CalcNN.Loffcity[i] = 0;  //初期化
+    }
+    for(int name = 0; name < N; name++){
+        for(int num = 0; num < N; num++){
+            if(CalcNN.Ctvk[name * N + num] > reset_time * 0.6){//100nsで60回以上（0.6回/nsが基準）到達するレーンが解候補になっているとしてカウント。
+                CalcNN.Loffcity[name]++;
+            }
+        }
+    }
+    for(int name = 0; name < N; name++){
+        if(CalcNN.Loffcity[name] == 0){
+            for(int vk = 0; vk < N2; vk++){
+                CalcNN.Xvk[vk] = Ini_X;
+            }
+            for(int vk = 0; vk < N2; vk++){
+                CalcNN.Ctvk[vk] = 0;
+            }
+            // fprintf(fp,"\nReset  %f [ns]\n",t,NAME[name]);
+            std::cout << "\nReset  " << t << "[ns]\n";
+            break;
+        }
+    }
+}
+    
+
+
+
 //一般関数（下のファイル出力名に使う）
 std::string sanitizeTimeString(const std::string& raw) {
     // ファイル名で使えない文字（スペースやコロン）をアンダースコアに置換
@@ -478,39 +517,39 @@ std::string sanitizeTimeString(const std::string& raw) {
     return s;
 }
 
-/*
-//出力ファイル
+
+//結果ファイル出力
 template <typename Element>
-void writeresFile() {
+void Simulation2D<Element>::writeresFile() {
     constexpr const char* buildDate = __DATE__;  // 例: "May 31 2025"
     constexpr const char* buildTime = __TIME__;  // 例: "11:45:23"
 
     std::string dateStr = sanitizeTimeString(buildDate);
     std::string timeStr = sanitizeTimeString(buildTime);
 
-    std::string filename = "output/res_" + dateStr + "_" + timeStr + ".txt";
+    std::string filename = "../ans_data/res_" + dateStr + "_" + timeStr + ".txt";
 
-    std::ofstream result(filename);
+    std::ofstream result(filename, std::ios::app); //appendでファイルに追記するモード
     if (!result) {
-        std::cerr << "ファイル作成に失敗しました: " << filename << std::endl;
+        std::cerr << "Making File Failed: " << filename << std::endl;
         return;
     }
 
-
+    result << std::fixed << std::setprecision(4); // 小数点以下4桁で統一
     //結果出力
     for(int i = 0; i < N2; i++){
         if(i % N == 0){
             result << "\n";
         }
-        result << NAME[i/N] << (i % N) + 1 << ct[i];
+        result << NAME<N>[i/N] << (i % N) + 1 << " : " << CalcNN.Ctvk[i] << "\n";
     }
     result << "\n\n";
 
-    int max[N][2]={0};
+    std::vector<std::vector<int>> max(N, std::vector<int> (2,0));
     for(int i = 0; i < N; i++){
         for(int j = 0; j < N; j++){
-            if(max[i][0] < ct[(i*N) + j]){
-                max[i][0] = ct[(i*N) + j];
+            if(max[i][0] < CalcNN.Ctvk[(i*N) + j]){
+                max[i][0] = CalcNN.Ctvk[(i*N) + j];
                 max[i][1] = j;
             }else{
                 //NR
@@ -518,46 +557,56 @@ void writeresFile() {
         }
     }
 
-    int sort[N] = {0};
+    std::vector<int> sort(N, 0);
     for(int x = 0; x < N; x++){  //iとかjとかややこしいのでx
         sort[max[x][1]] = x;   //0はsort[max[0]], 1はsort[max[1]],...となる（ややこしかった）
     }
 
     for(int i=0;i<N;i++){
         if(i!=N-1){
-            result << NAME[sort[i]] << "⇒ ";
+            result << NAME<N>[sort[i]] << " ⇒ ";
         }else{
-            result << NAME[sort[i]] << "\n\n";
+            result << NAME<N>[sort[i]] << "\n\n";
         }
     }
 
     int sumcost=0;
     int small,large=0;
-    for(int i=0;i<N;i++){ //コストの合計を求める。もし4都市でABCDだったら、AB,BC,CDの3通りのコストを足す。
+    for(int i = 0; i < N; i++){ //コストの合計を求める。もし4都市でABCDだったら、AB,BC,CDの3通りのコストを足す。
 
-        if(sort[i%N]<sort[(i+1)%N]){ //costarrayの仕様上小さいほうを決めなきゃいけない。（ＢＡではなくＡＢのように）
-            small=sort[i%N];  //%Nにしているのは、i=N-1のとき、(i+1)%Nが0になって、巡回できるようになってる。
-            large=sort[(i+1)%N];
+        if(sort[i % N] < sort[(i + 1) % N]){ //costarrayの仕様上小さいほうを決めなきゃいけない。（ＢＡではなくＡＢのように）
+            small=sort[i % N];  //%Nにしているのは、i=N-1のとき、(i+1)%Nが0になって、巡回できるようになってる。
+            large=sort[(i + 1) % N];
         }else{
-            small=sort[(i+1)%N];
-            large=sort[i%N];
+            small=sort[(i + 1) % N];
+            large=sort[i % N];
         }
-        sumcost+=costarray[small][large];
+        sumcost += CalcNN.costarray[small][large];
     }
+
+    /*
+    //costarrayデバッグ
+    for (auto row : CalcNN.costarray){
+        for (int cost : row){
+            std::cout << cost << " ";
+        }
+        std::cout << "\n";
+    }
+    */
 
     result << "合計コスト : " << sumcost << "\n\n\n";
 
     for(int i=0;i<N2;i++){
-        if(Lvk[i]<0.5){
-            result << "Lvk[" << i << "]" << NAME[i/N] << (i%N)+1 << Lvk[i] << "\n";
+        if(CalcNN.Lvk[i]<0.5){
+            result << "Lvk[" << i << "]" << NAME<N>[i/N] << (i%N)+1 << " : " << CalcNN.Lvk[i] << "\n";
         }
     }
 
     result.close();
 
-    std::cout << "ファイル作成: " << filename << std::endl;
+    std::cout << "Resultfile Created at: " << filename << std::endl;
 }
-*/
+
 
 
 template <typename Element>
@@ -599,14 +648,14 @@ void Simulation2D<Element>::generateGnuplotScript(const std::string& dataFilenam
 template <typename Element>
 void Simulation2D<Element>::printProgressBar(){
     static int last_stage = -1;
-    int stage = static_cast<int>((t / endtime) * 10);  // 0〜10（10%刻み）
+    int stage = static_cast<int>((t / endtime) * 20);  // 0〜10（10%刻み）
 
     if (stage != last_stage) {
         last_stage = stage;
-        int percent = stage * 10;
+        int percent = stage * 5;
 
         std::string bar = "[";
-        for (int i = 0; i < 10; ++i)
+        for (int i = 0; i < 20; ++i)
             bar += (i < stage) ? "=" : " ";
         bar += "]";
 

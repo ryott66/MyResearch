@@ -61,7 +61,7 @@ int main()
 
 
     /*
-    //結合係数デバック出力
+    //結合係数デバッグ出力
     for (const auto& row : W) {
         for (auto val : row) {
             std::cout << val.weight << " ";
@@ -91,8 +91,8 @@ int main()
     // sim.addVoltageTrigger(100, &grid, 15, 15, 0.006);
     sim.run();
 
-    sim.printCt();
-
+    //結果ファイル出力
+    sim.writeresFile();
 
     // 動画出力
     const auto& outputs = sim.getOutputs();
