@@ -12,22 +12,6 @@
 
 
 
-constexpr int WideLane = 5;
-constexpr int NarrowLane = 1;
-constexpr int CenterLane = (WideLane + 1) / 2;
-
-constexpr int size_x = 60;
-constexpr int size_y = (WideLane + 1) * N2;
-
-constexpr double Vd = 0.0044;
-constexpr double VibVd = 0.009;
-constexpr double R = 0.07;
-constexpr double Rj = 0.002;
-constexpr double Cj = 10.0;
-constexpr double C = 2.0;
-constexpr double dt = 0.1;
-constexpr double endtime = 1;
-
 
 
 using Grid = Grid2D<BaseElement>;
@@ -36,6 +20,8 @@ using Sim = Simulation2D<BaseElement>;
 
 int main()
 {
+    srand(time(0)); //乱数のシード
+
     Grid grid(size_y, size_x, true);
     grid.setOutputLabel("seo");
 
@@ -73,24 +59,17 @@ int main()
         }
     }
 
-    // コストから結合係数表作成
-    int ctarrayroop = 0;
-    std::vector<std::vector<double>> costarray(N, std::vector<double>(N,0)); //N*N int vectror all 0
-    for (int i = 0; i < N; i++) {
-        for (int j = i + 1; j < N; j++) {
-            costarray[i][j] = Cost[ctarrayroop];
-            ctarrayroop++;
-        }
-    }
-    std::vector<std::vector<Weight>> Wei_Arr(N2, std::vector<Weight>(4 * (N - 1)));
-    calcweight(Wei_Arr, costarray);
 
-    for (const std::vector<Weight>& row : Wei_Arr) {
-        for (Weight val : row) {
+    /*
+    //結合係数デバック出力
+    for (const auto& row : W) {
+        for (auto val : row) {
             std::cout << val.weight << " ";
         }
         std::cout << std::endl;
     }
+    */
+
     // シミュレーション初期化
     Sim sim(dt, endtime);
     sim.addGrid({grid});
@@ -111,6 +90,9 @@ int main()
     // トリガ設定
     // sim.addVoltageTrigger(100, &grid, 15, 15, 0.006);
     sim.run();
+
+    sim.printCt();
+
 
     // 動画出力
     const auto& outputs = sim.getOutputs();

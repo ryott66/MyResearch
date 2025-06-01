@@ -19,18 +19,92 @@ constexpr double Nu = 0.005;
 constexpr double Lambda = 0.5;
 constexpr double Myu = 0.5;
 
+constexpr double calcL_time = 1.0; //ns
+
+constexpr int WideLane = 5;
+constexpr int NarrowLane = 1;
+constexpr int CenterLane = (WideLane + 1) / 2;
+
+constexpr int size_x = 60;
+constexpr int size_y = (WideLane + 1) * N2;
+
+constexpr int tenthlane = size_x/10;
+
+constexpr double Vd = 0.0044;
+constexpr double VibVd = 0.009;
+constexpr double R = 0.07;
+constexpr double Rj = 0.002;
+constexpr double Cj = 10.0;
+constexpr double C = 2.0;
+constexpr double dt = 0.1;
+constexpr double endtime = 100;
+
+
+//関数宣言（中身は最後）
+double sigmoid(int gamma, double theta, double value);
+double rnd_generate(double min, double max);
+
 class Weight {
 public:
     int u;           // 接続先レーンインデックス
     double weight;   // 重み W[Vk][u]
 };
 
+class Calculate_NN 
+{
+private:
+    double t;
+    std::vector<std::vector<Weight>> W;
+    std::vector<double> Xvk;
+    std::vector<double> dX;
 
-void calcweight(std::vector<std::vector<Weight>>& W, std::vector<std::vector<double>>& costarray) {
+
+    
+public:
+    //コンストラクタ
+    template <std::size_t SIZE>
+    Calculate_NN(const std::array<double, SIZE>& Cost);
+    std::vector<double> Lvk;
+    std::vector<int> Nvk;
+    std::vector<int> Ctvk;
+    template <std::size_t SIZE>
+    void calcweight(const std::array<double, SIZE>& Cost);
+    void calcL();
+    std::vector<int> getCt();
+    std::vector<int> getNvk();
+
+};
+
+//コンストラクタ
+template <std::size_t SIZE>
+Calculate_NN::Calculate_NN(const std::array<double, SIZE>& Cost)
+    : Lvk(N2, 0.0), Xvk(N2, Ini_X), dX(N2, 0.0), Nvk(N2, 0), Ctvk(N2, 0)
+     {
+    // Wを N2 行 × 最大4(N-1)列で初期化（Weight構造体の2次元ベクトル）
+    W.resize(N2, std::vector<Weight>(4 * (N - 1)));
+    // メンバ関数
+    calcweight(Cost);
+}
+
+
+template <std::size_t SIZE>
+void Calculate_NN::calcweight(const std::array<double, SIZE>& Cost){
+    // コストからコスト表作成
+    int ctarrayroop = 0;
+    std::vector<std::vector<double>> costarray(N, std::vector<double>(N,0)); //N*N int vectror all 0
+    for (int i = 0; i < N; i++) {
+        for (int j = i + 1; j < N; j++) {
+            costarray[i][j] = Cost[ctarrayroop];
+            ctarrayroop++;
+        }
+    }
+
+
+    // コスト表から結合係数表作成
     int l, s = 0;
 
     for (int v = 0; v < N2; v++) {
-        int ct = 0;  // このノード v の有効エッジ数
+        int ct = 0; //現在のインデックス
 
         for (int u = 0; u < N2; u++) {
             if ((v / N) == (u / N)) {  // 同じ都市（都市番号）
@@ -63,45 +137,54 @@ void calcweight(std::vector<std::vector<Weight>>& W, std::vector<std::vector<dou
             }
         }
     }
+
+    for (const auto& row : W) {
+        for (auto val : row) {
+            std::cout << val.weight << " ";
+        }
+        std::cout << std::endl;
+    }
 }
 
 
-/* 
-void calcL(double *Lvk, double *Xst, const std::vector<std::vector<Weight>>& W, double *dX, int *Nvk){ //Lの計算、それに伴うXの更新等
+void Calculate_NN::calcL(){ //Lの計算、それに伴うXの更新等
+    std::cout << "calcL" << std::endl;
+    for (double L : Lvk){
+        std::cout << L << ", ";
+    }
+    double dt1 = 0;
+    double dt2 = 0;
+    double sum = 0;
+    double Outdt = 0;
+    double sumO = 0;    //  全レーンのOutの合計
+    double Indt = 0;
+    std::vector<int> Loffcity(N,0);
+    int Loff = 0;
 
-    double dt1=0;
-    double dt2=0;
-    double sum=0;
-    double Outdt=0;
-    double sumO=0;    //  全レーンのOutの合計
-    double Indt=0;
-    int Loffcity[N]={0};
-    int Loff=0;
 
-
-    for(int vk=0;vk<N2;vk++){   //全レーンでLを計算
-        dt1=0;
-        dt2=0;
-        sum=0;
-        for(int ct=0 ; ct < 4*(N-1) ; ct++){     //2重繰り返し
-            dt1=Xst[W[vk][ct].u];//+rnd_generate(-0.003,0.003)
-            dt2=sigmoid(35,0.6,dt1);
-            sum+=W[vk][ct].weight *dt2;  //W[vk][ul]*sigmoid(Xul)
+    for(int vk = 0 ; vk < N2 ; vk++){   //全レーンでLを計算
+        dt1 = 0;
+        dt2 = 0;
+        sum = 0;
+        for(int ct = 0 ; ct < 4*(N-1) ; ct++){     //2重繰り返し
+            dt1 = Xvk[W[vk][ct].u];//+rnd_generate(-0.003,0.003)
+            dt2 = sigmoid(35,0.6,dt1);
+            sum += W[vk][ct].weight * dt2;  //W[vk][ul]*sigmoid(Xul)
         }
 
-        Lvk[vk]=1-sigmoid(1000,-0.5,sum);
+        Lvk[vk] = 1 - sigmoid(1000, -0.5, sum);
 
         if(Lvk[vk] > 0.5){  //光照射されたレーンは粘菌が縮むのでOutを計算
-            Outdt=sigmoid(30,0.2,Xst[vk]);//20?
-            dX[vk]=0.002*Outdt;   //Ovkを固定
-            sumO+=dX[vk];
+            Outdt = sigmoid(30, 0.2, Xvk[vk]);//20?
+            dX[vk] = 0.002 * Outdt;   //Ovkを固定
+            sumO += dX[vk];
         }
     }
     //Stock Redistribution(再分配)
 
-    for(int name=0;name<N;name++){
-        for(int num=0;num<N;num++){
-            if(Lvk[name*N+num]<0.5){
+    for(int name = 0; name < N; name++){
+        for(int num = 0; num < N; num++){
+            if(Lvk[name * N + num] < 0.5){
                 Loffcity[name]++;
                 Loff++;
             }
@@ -109,30 +192,51 @@ void calcL(double *Lvk, double *Xst, const std::vector<std::vector<Weight>>& W, 
     }
 
 
-    for(int vk=0;vk<N2;vk++){//広いInのレーンをみる
-        if((Lvk[vk]<=0.5)){
-            dX[vk]= (sumO / (double)Loff) + (Nvk[vk]*0.00025);  //全レーンのInを更新  LoffではなくN^2で割る案も
-            Nvk[vk]=0;
+    for(int vk = 0; vk < N2; vk++){//広いInのレーンをみる
+        if((Lvk[vk] <= 0.5)){
+            dX[vk] = (sumO / (double)Loff) + (Nvk[vk] * 0.00025);  //全レーンのInを更新  LoffではなくN^2で割る案も
+            Nvk[vk] = 0;
         }
     }
 
 
     for(int vk=0;vk<N2;vk++){  //Xstの更新
-        dX[vk]+=rnd_generate(-0.002,0.002);
+        dX[vk] += rnd_generate(-0.002,0.002);
         if(Lvk[vk] < 0.5){ //光照射なし
-            if(Xst[vk]<1.0){
+            if(Xvk[vk] < 1.0){
                 //Inを足す
-                Xst[vk] += dX[vk];
+                Xvk[vk] += dX[vk];
             }else{
              //NR
             }
         }else{
-            Xst[vk] -= dX[vk]; 
+            Xvk[vk] -= dX[vk]; 
         }
     }
 
 }
 
-*/
+std::vector<int> Calculate_NN::getNvk(){
+    return Nvk;
+}
+
+std::vector<int> Calculate_NN::getCt(){
+    return Ctvk;
+}
+
+
+double sigmoid(int gamma, double theta, double value){
+    double ex = exp(-gamma * (value - theta));
+    double h=1/(1 + ex);
+    return h;
+}
+
+//指定の範囲の乱数を生成する関数
+double rnd_generate(double min, double max){
+    double t = (double)rand() / RAND_MAX;
+    return min + (max - min)*t;
+}
+
+
 
 #endif

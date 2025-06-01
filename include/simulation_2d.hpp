@@ -10,6 +10,11 @@
 #include "seo_class.hpp"
 #include "grid_2dim.hpp"
 // #include "output_class.hpp"
+#include "tsp_methods.hpp"
+
+#include <iostream>
+#include <string>
+#include <algorithm>
 
 template <typename Element>
 class Simulation2D
@@ -17,6 +22,7 @@ class Simulation2D
 private:
     double t;                           // 現在の時間（不定期に増える）
     double dt;                          // 基本刻み（参考値）
+    double xt;                          // 計算calcLを行う時間の管理
     double endtime;                     // 終了時刻
     double outputInterval;              // 出力間隔（例: 0.1）
     double nextOutputTime;              // 次に出力すべき時刻（0.1, 0.2, ...）
@@ -34,7 +40,7 @@ private:
     // 複数素子を1つのファイルに出力するための構造
     std::vector<std::pair<std::shared_ptr<std::ofstream>, std::vector<std::shared_ptr<Element>>>> selectedElements;
 
-
+    Calculate_NN CalcNN; //ニューラルネットワークの計算をシミュレーション内で行うためのクラス
 
 public:
     // コンストラクタ(刻み時間,シミュレーションの終了タイミング)
@@ -67,6 +73,9 @@ public:
     // シミュレーションの実行
     void run();
 
+    //到達回数の表示
+    void printCt();
+
     // グリッド取得
     std::vector<Grid2D<Element>> &getGrids();
 
@@ -79,6 +88,9 @@ public:
     // トリガを適用させる
     void applyVoltageTriggers();
 
+    //Vdの変更
+    void applychangeVd();
+
     // ファイル出力する素子とファイルを格納するベクトルに追加する
     void addSelectedElements(std::shared_ptr<std::ofstream> ofs, const std::vector<std::shared_ptr<Element>>& elems);
 
@@ -90,12 +102,17 @@ public:
 
     // 実行中の進捗状況を表示する
     void printProgressBar();
+
+    //結果表示ファイル
+    void writeresFile();
+
 };
+
 
 // コンストラクタ
 template <typename Element>
 Simulation2D<Element>::Simulation2D(double dT, double EndTime)
-    : t(0.0), dt(dT), endtime(EndTime), outputInterval(dT), nextOutputTime(0.0) {}
+    : t(0.0), dt(dT), xt(0.0), endtime(EndTime), outputInterval(dT), nextOutputTime(0.0), CalcNN(Cost) {}
 
 // 最小wtをもつgridを探索する（最小wtがdtより小さいかどうかのbool, 最小のwtを持つgrid）
 template <typename Element>
@@ -127,6 +144,14 @@ void Simulation2D<Element>::handleTunnels(Grid2D<Element> &tunnelgrid)
     auto ptr = tunnelgrid.getTunnelPlace();
     //----------------トンネル場所の記録--------------------------------
     auto [y, x] = tunnelgrid.getPositionOf(ptr);
+    if (((x + 1) % tenthlane == 0 ) && (y % (WideLane + 1) == CenterLane)){  //レーン長XSIZEを10分割して各場所に到達したらカウント+1
+        CalcNN.Ctvk[y / (WideLane + 1)] += 1;
+        if (CalcNN.Nvk[y / (WideLane + 1)] < 30){
+            CalcNN.Nvk[y / (WideLane + 1)] += 1;
+        }else{
+            //NR
+        }
+    }
     std::ofstream log("../output/tunnel_log.txt", std::ios::app);
     if (log.is_open()) {
         log << "t=" << t
@@ -282,6 +307,7 @@ void Simulation2D<Element>::runStep()
     // ファイル出力
     outputSelectedElements();
 
+
     // grid全体のVn計算(5回計算してならす)
     for (int i = 0; i < 5; i++)
     {
@@ -321,6 +347,7 @@ void Simulation2D<Element>::runStep()
 
     // tの増加
     t += steptime;
+    xt += steptime;
 }
 
 // Gridインスタンスの配列を登録
@@ -334,10 +361,27 @@ void Simulation2D<Element>::addGrid(const std::vector<Grid2D<Element>> &Gridinst
 template <typename Element>
 void Simulation2D<Element>::run()
 {
+
     while (t < endtime)
     {
+        if (calcL_time < xt){  //calcL_time毎にcalcLを行う
+            CalcNN.calcL();
+            applychangeVd();
+
+            xt = 0;
+        }
+
         runStep();
         printProgressBar();
+    }
+}
+
+
+// 到達回数表示
+template <typename Element>
+void Simulation2D<Element>::printCt() {
+    for (int ct : CalcNN.Ctvk) {
+        std::cout << ct << "ct " << std::endl;
     }
 }
 
@@ -381,6 +425,140 @@ void Simulation2D<Element>::applyVoltageTriggers()
         }
     }
 }
+
+template <typename Element>
+void Simulation2D<Element>::applychangeVd(){
+    double biasVd = 0;
+    std::shared_ptr<Element> chseo;
+    //経路幅調整
+    for (auto &grid : grids)
+    {    
+        for(int vk = 0; vk < N2 ; vk++){  //Lane x    
+            if(CalcNN.Lvk[vk] > 0.5){//光照射アリ⇒経路狭く
+                for(int x = 2; x < size_x; x++){
+                    for(int y = 1; y <= ((CenterLane) - ((NarrowLane + 1) / 2)); y++){//ややこしいけど多分あってる
+                        // Center下側
+                        biasVd = (((vk * (WideLane + 1) + y) + x) % 2 == 0) ? 0.003 : -0.003;
+                        //applyVd
+                        chseo = grid.getElement((vk * (WideLane + 1) + y), x);
+                        chseo->setVias(biasVd);
+
+                        // Center上側
+                        biasVd = ((((vk + 1) * (WideLane + 1) - y) + x) % 2 == 0) ? 0.003 : -0.003;
+                        chseo = grid.getElement(((vk + 1) * (WideLane + 1) - y), x);
+                        chseo->setVias(biasVd);
+                    }
+                }
+            }else{
+                for(int x = 2; x < size_x; x++){
+                    for(int y = 1; y <= ((CenterLane) - ((NarrowLane + 1) / 2)); y++){//ややこしいけど多分あってる
+                        // Center下側
+                        biasVd = (((vk * (WideLane + 1) + y) + x) % 2 == 0) ? Vd : -Vd;
+                        //applyVd
+                        chseo = grid.getElement((vk * (WideLane + 1) + y), x);
+                        chseo->setVias(biasVd);
+
+                        // Center上側
+                        biasVd = ((((vk + 1) * (WideLane + 1) - y) + x) % 2 == 0) ? Vd : -Vd;
+                        chseo = grid.getElement(((vk + 1) * (WideLane + 1) - y), x);
+                        chseo->setVias(biasVd);
+                    }
+                }
+            }  
+        }
+    }
+}
+
+//一般関数（下のファイル出力名に使う）
+std::string sanitizeTimeString(const std::string& raw) {
+    // ファイル名で使えない文字（スペースやコロン）をアンダースコアに置換
+    std::string s = raw;
+    std::replace(s.begin(), s.end(), ' ', '_');
+    std::replace(s.begin(), s.end(), ':', '_');
+    return s;
+}
+
+/*
+//出力ファイル
+template <typename Element>
+void writeresFile() {
+    constexpr const char* buildDate = __DATE__;  // 例: "May 31 2025"
+    constexpr const char* buildTime = __TIME__;  // 例: "11:45:23"
+
+    std::string dateStr = sanitizeTimeString(buildDate);
+    std::string timeStr = sanitizeTimeString(buildTime);
+
+    std::string filename = "output/res_" + dateStr + "_" + timeStr + ".txt";
+
+    std::ofstream result(filename);
+    if (!result) {
+        std::cerr << "ファイル作成に失敗しました: " << filename << std::endl;
+        return;
+    }
+
+
+    //結果出力
+    for(int i = 0; i < N2; i++){
+        if(i % N == 0){
+            result << "\n";
+        }
+        result << NAME[i/N] << (i % N) + 1 << ct[i];
+    }
+    result << "\n\n";
+
+    int max[N][2]={0};
+    for(int i = 0; i < N; i++){
+        for(int j = 0; j < N; j++){
+            if(max[i][0] < ct[(i*N) + j]){
+                max[i][0] = ct[(i*N) + j];
+                max[i][1] = j;
+            }else{
+                //NR
+            }
+        }
+    }
+
+    int sort[N] = {0};
+    for(int x = 0; x < N; x++){  //iとかjとかややこしいのでx
+        sort[max[x][1]] = x;   //0はsort[max[0]], 1はsort[max[1]],...となる（ややこしかった）
+    }
+
+    for(int i=0;i<N;i++){
+        if(i!=N-1){
+            result << NAME[sort[i]] << "⇒ ";
+        }else{
+            result << NAME[sort[i]] << "\n\n";
+        }
+    }
+
+    int sumcost=0;
+    int small,large=0;
+    for(int i=0;i<N;i++){ //コストの合計を求める。もし4都市でABCDだったら、AB,BC,CDの3通りのコストを足す。
+
+        if(sort[i%N]<sort[(i+1)%N]){ //costarrayの仕様上小さいほうを決めなきゃいけない。（ＢＡではなくＡＢのように）
+            small=sort[i%N];  //%Nにしているのは、i=N-1のとき、(i+1)%Nが0になって、巡回できるようになってる。
+            large=sort[(i+1)%N];
+        }else{
+            small=sort[(i+1)%N];
+            large=sort[i%N];
+        }
+        sumcost+=costarray[small][large];
+    }
+
+    result << "合計コスト : " << sumcost << "\n\n\n";
+
+    for(int i=0;i<N2;i++){
+        if(Lvk[i]<0.5){
+            result << "Lvk[" << i << "]" << NAME[i/N] << (i%N)+1 << Lvk[i] << "\n";
+        }
+    }
+
+    result.close();
+
+    std::cout << "ファイル作成: " << filename << std::endl;
+}
+*/
+
 
 template <typename Element>
 void Simulation2D<Element>::generateGnuplotScript(const std::string& dataFilename, const std::vector<std::string>& labels)
