@@ -2,5 +2,6 @@
 *.exe
 *.txt
 /output
+*.mp4
 # CMakeListsだけは追跡するように設定
 !CMakeLists.txt
