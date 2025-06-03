@@ -4,9 +4,9 @@
 #include <array>
 #include <string>
 
-constexpr int N = 5;
+constexpr int N = 4;
 constexpr int N2 = N * N;
-constexpr std::array<double, 10> Cost = {30,30,80,80,80,30,80,10,30,30};
+constexpr std::array<double, 10> Cost = {5,35,65,65,35,25};
 /*	4都市(6)	ver1{5,35,65,65,35,25}
 	5都市(10)　	ver1{30,25,40,45,50,40,50,35,20,40}
   			ver2{30,30,80,80,80,30,80,10,30,30}
@@ -28,25 +28,25 @@ constexpr double Nu = 0.005;
 constexpr double Lambda = 0.5;
 constexpr double Myu = 0.5;
 
-constexpr double calcL_time = 1.0; //ns
-constexpr double reset_time = calcL_time * N * 70;  //都市数×100回、calcLを行ったらリセット判定
-constexpr int WideLane = 5;
+constexpr double calcL_time = 1; //ns
+constexpr double reset_time = calcL_time * N * 100;  //都市数×100回、calcLを行ったらリセット判定
+constexpr int WideLane = 3;
 constexpr int NarrowLane = 1;
 constexpr int CenterLane = (WideLane + 1) / 2;
 
-constexpr int size_x = 60;
+constexpr int size_x = 40;
 constexpr int size_y = (WideLane + 1) * N2;
 
 constexpr int tenthlane = size_x/10;
 
 constexpr double Vd = 0.0044;
-constexpr double VibVd = 0.009;
+constexpr double VibVd = 0.0085;
 constexpr double R = 0.07;
 constexpr double Rj = 0.002;
 constexpr double Cj = 10.0;
 constexpr double C = 2.0;
 constexpr double dt = 0.1;
-constexpr double endtime = 1000;
+constexpr double endtime = 100;
 
 
 
@@ -65,9 +65,6 @@ class Calculate_NN
 private:
     double t;
     std::vector<std::vector<Weight>> W;
-    std::vector<double> dX;
-
-
     
 public:
     //コンストラクタ
@@ -78,6 +75,7 @@ public:
     std::vector<std::vector<double>> costarray;  //結果出力時の経路コスト算出時に必要だからpublic変数
     std::vector<double> Lvk;
     std::vector<double> Xvk;
+    std::vector<double> dX;
     std::vector<int> Loffcity;
     std::vector<int> Nvk;
     std::vector<int> Ctvk;

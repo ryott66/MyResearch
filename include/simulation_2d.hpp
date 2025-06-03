@@ -307,11 +307,12 @@ void Simulation2D<Element>::runStep()
 {
     double steptime = dt;
 
+    // Videoコメントアウトするなら（あんまり実行時間変わんない）
     // oyl-video形式に出力
     outputTooyl();
     // ファイル出力
     outputSelectedElements();
-
+    
 
     // grid全体のVn計算(5回計算してならす)
     for (int i = 0; i < 5; i++)
@@ -321,7 +322,7 @@ void Simulation2D<Element>::runStep()
             // 接続されている電圧を更新
             grid.updateGridSurVn();
             // トリガの適用
-            applyVoltageTriggers();
+            // applyVoltageTriggers();   トリガないからコメントアウト
             // 電圧を更新
             grid.updateGridVn();
         }
@@ -367,10 +368,29 @@ void Simulation2D<Element>::addGrid(const std::vector<Grid2D<Element>> &Gridinst
 template <typename Element>
 void Simulation2D<Element>::run()
 {
+    int printloop = 0;
     while (t < endtime)
     {
+        if(printloop > 15){  //15nsごとに表示
+            
+            std::cout << t << "[ns]" <<std::endl;
+            for(int i=0;i<N;i++){
+                std::cout << i << " : X=" << CalcNN.Xvk[i] <<", dX=" << CalcNN.dX[i] << ", Lvk=" << CalcNN.Lvk[i] <<"\n";
+            }
+            std::cout << "\n";
+            for(int i=N;i<N2;i++){
+                if(CalcNN.Lvk[i]<0.5){
+                std::cout << i << " : X=" << CalcNN.Xvk[i] <<", dX=" << CalcNN.dX[i] << ", Lvk=" << CalcNN.Lvk[i] <<"\n";
+                }
+            }
+            printloop = 0;
+        }
+
+
+
         if (calcL_time < cLt){  //calcL_time毎にcalcLを行う
             CalcNN.calcL();
+            printloop++;
             applychangeVd();
             if (reset_time < rt){
                 resetfunction();

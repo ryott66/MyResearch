@@ -73,6 +73,8 @@ int main()
     sim.addVoltageTrigger(100, &grid, 15, 15, 0.006);
     sim.run();
 
+
+    /*
     // 動画出力
     const auto& outputs = sim.getOutputs();
     if (outputs.count("seo"))
@@ -89,6 +91,8 @@ int main()
     {
         std::cerr << "[ERROR] No output data found for label 'seo'" << std::endl;
     }
+    */
 
+    
     return 0;
 }

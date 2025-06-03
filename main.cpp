@@ -74,7 +74,7 @@ int main()
     Sim sim(dt, endtime);
     sim.addGrid({grid});
 
-    /* 
+    /*
     // 特定素子の出力設定
     auto ofs = std::make_shared<std::ofstream>("../output/multivn.txt");
     std::vector<std::shared_ptr<BaseElement>> targets = {
