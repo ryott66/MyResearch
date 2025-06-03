@@ -5,3 +5,4 @@
 *.mp4
 # CMakeListsだけは追跡するように設定
 !CMakeLists.txt
+.vscode/c_cpp_properties.json
